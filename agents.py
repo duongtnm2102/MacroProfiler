@@ -85,5 +85,5 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc.
         {"role": "system", "content": system_msg},
         {"role": "user", "content": f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."}
     ]
-    # Dùng model 120B mạnh nhất để phân tích chuyên sâu
-    return call_groq(messages, model="gpt-oss-120b", temperature=0.3)
+    # Dùng model 70B mạnh nhất để phân tích chuyên sâu
+    return call_groq(messages, model="llama-3.3-70b-versatile", temperature=0.3)
