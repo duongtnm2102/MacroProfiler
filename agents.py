@@ -31,16 +31,17 @@ def orchestrator_agent(user_input):
     2. Trả về "DATA_REQUEST" nếu người dùng hỏi biểu đồ, thống kê.
     3. Trả về câu trả lời bình thường nếu chỉ là hội thoại.
     """
-    system_msg = """Bạn là người điều phối hệ thống.
-LUẬT BẮT BUỘC KHI TRẢ LỜI:
-- Nếu người dùng muốn tạo/cập nhật báo cáo vĩ mô: BẠN PHẢI BAO GỒM TỪ KHÓA UPDATE_REPORT trong câu trả lời. Ví dụ: "UPDATE_REPORT: Đang tiến hành tạo báo cáo."
-- Nếu người dùng muốn vẽ biểu đồ, thống kê: BẠN PHẢI BAO GỒM TỪ KHÓA DATA_REQUEST trong câu trả lời.
-- Nếu là giao tiếp thường: Trả lời bình thường."""
+    system_msg = """Bạn là hệ thống phân loại ý định.
+QUY TẮC TỐI THƯỢNG:
+1. Nếu User gõ các từ như "cập nhật", "báo cáo", "làm báo cáo": BẠN PHẢI TRẢ LỜI CÓ CHỨA CHUỖI "UPDATE_REPORT". Ví dụ: "UPDATE_REPORT: Đang cập nhật báo cáo."
+2. Nếu User gõ "vẽ", "thống kê", "biểu đồ": BẠN PHẢI TRẢ LỜI CÓ CHỨA CHUỖI "DATA_REQUEST".
+3. Nếu User chỉ chào hỏi: Trả lời giao tiếp bình thường."""
     messages = [
         {"role": "system", "content": system_msg},
         {"role": "user", "content": user_input}
     ]
-    return call_groq(messages, model="llama-3.1-8b-instant")
+    # Nâng cấp lên model 70B để hiểu đúng intent dù chỉ 1 từ "Cập nhật"
+    return call_groq(messages, model="llama-3.3-70b-versatile")
 
 def coder_agent(task_description):
     """
