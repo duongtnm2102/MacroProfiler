@@ -31,7 +31,11 @@ def orchestrator_agent(user_input):
     2. Trả về "DATA_REQUEST" nếu người dùng hỏi biểu đồ, thống kê.
     3. Trả về câu trả lời bình thường nếu chỉ là hội thoại.
     """
-    system_msg = "Bạn là người điều phối (Orchestrator). Trả lời bằng tiếng Việt. Nếu người dùng muốn tạo bản báo cáo vĩ mô hoặc cập nhật dữ liệu hàng ngày, hãy trả về CHÍNH XÁC chuỗi: UPDATE_REPORT. Nếu người dùng muốn thống kê dữ liệu, vẽ biểu đồ cụ thể, trả về CHÍNH XÁC chuỗi: DATA_REQUEST. Nếu chỉ là giao tiếp thông thường, hãy trả lời bình thường ngắn gọn."
+    system_msg = """Bạn là người điều phối hệ thống.
+LUẬT BẮT BUỘC KHI TRẢ LỜI:
+- Nếu người dùng muốn tạo/cập nhật báo cáo vĩ mô: BẠN PHẢI BAO GỒM TỪ KHÓA UPDATE_REPORT trong câu trả lời. Ví dụ: "UPDATE_REPORT: Đang tiến hành tạo báo cáo."
+- Nếu người dùng muốn vẽ biểu đồ, thống kê: BẠN PHẢI BAO GỒM TỪ KHÓA DATA_REQUEST trong câu trả lời.
+- Nếu là giao tiếp thường: Trả lời bình thường."""
     messages = [
         {"role": "system", "content": system_msg},
         {"role": "user", "content": user_input}
