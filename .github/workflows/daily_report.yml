@@ -37,5 +37,7 @@ jobs:
           US_POLICY_CSV_URL: ${{ secrets.US_POLICY_CSV_URL }}
           US_OMO_CSV_URL: ${{ secrets.US_OMO_CSV_URL }}
           US_YIELD_CSV_URL: ${{ secrets.US_YIELD_CSV_URL }}
+          US_EXCHANGE_CSV_URL: ${{ secrets.US_EXCHANGE_CSV_URL }}
+          US_INTERBANK_CSV_URL: ${{ secrets.US_INTERBANK_CSV_URL }}
         run: |
           python generate_report.py
