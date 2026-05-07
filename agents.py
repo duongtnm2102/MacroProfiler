@@ -9,7 +9,7 @@ load_dotenv()
 # Cần cấu hình GROQ_API_KEY trong .env hoặc Streamlit Secrets
 groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def call_groq(messages, model="llama3-8b-8192", temperature=0.2):
+def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.2):
     """
     Hàm gọi API chung cho các Agents
     """
@@ -36,7 +36,7 @@ def orchestrator_agent(user_input):
         {"role": "system", "content": system_msg},
         {"role": "user", "content": user_input}
     ]
-    return call_groq(messages, model="llama3-8b-8192")
+    return call_groq(messages, model="llama-3.1-8b-instant")
 
 def coder_agent(task_description):
     """
@@ -67,7 +67,7 @@ Biến `st` (streamlit) đã được import sẵn. Hãy print() các thống k�
         {"role": "user", "content": task_description}
     ]
     # Dùng model mạnh hơn cho code
-    return call_groq(messages, model="llama3-70b-8192", temperature=0.1)
+    return call_groq(messages, model="llama-3.3-70b-versatile", temperature=0.1)
 
 def economist_agent(prompt_content, data_context):
     """
@@ -85,5 +85,5 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc.
         {"role": "system", "content": system_msg},
         {"role": "user", "content": f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."}
     ]
-    # Dùng model 70b để viết phân tích sâu sắc
-    return call_groq(messages, model="llama3-70b-8192", temperature=0.3)
+    # Dùng model 120B mạnh nhất để phân tích chuyên sâu
+    return call_groq(messages, model="gpt-oss-120b", temperature=0.3)
