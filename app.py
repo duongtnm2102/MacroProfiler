@@ -6,6 +6,7 @@ import sys
 from data_loader import get_all_data
 from email_utils import send_daily_report
 from agents import orchestrator_agent, coder_agent, economist_agent
+from data_processor import process_macro_data
 
 st.set_page_config(page_title="Macro-Profiler AI", page_icon="📈", layout="wide")
 st.title("📈 Longitudinal Strategic Macro-Profiler")
@@ -82,9 +83,8 @@ if prompt := st.chat_input("Nhập lệnh (VD: Cập nhật, Thống kê tỷ gi
             message_placeholder.markdown("🔄 Đang xử lý dữ liệu và tạo báo cáo vĩ mô (có thể mất 1-2 phút)...")
             # --- LUỒNG TẠO BÁO CÁO (UPDATE_REPORT) ---
             
-            # (Phần này sẽ gọi Coder để lấy context dữ liệu, sau đó gọi Economist)
-            # Tạm thời giả lập lấy context
-            data_context = "Đã lấy dữ liệu từ CSV. " + str(list(st.session_state.data_dict.keys()))
+            # (Phần này sẽ gọi Data Processor để tính toán thống kê)
+            data_context = process_macro_data(st.session_state.data_dict)
             
             # Đọc prompt.txt
             prompt_path = "prompt.txt"

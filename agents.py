@@ -47,7 +47,18 @@ Nhiệm vụ: Dựa vào yêu cầu, hãy viết script Python.
 Luôn đặt code của bạn trong markdown ```python ... ```.
 Để hiển thị biểu đồ trên Streamlit, HÃY DÙNG `st.pyplot(fig)` thay vì `plt.show()` hoặc `plt.savefig()`.
 Các file CSV đã được load sẵn thành một dictionary tên là `data_dict`. 
-Keys gồm: 'SBV_OMO', 'SBV_Interbank_Rate', 'SBV_Exchange_Rate', 'SBV_Policy_and_FedWatch', 'SBV_Yield_Curve', 'US_Policy_Rates', 'US_OMO', 'US_Yield_Curve'.
+Keys và Cấu trúc cột của từng file (để bạn không phải tốn token gọi df.head()):
+1. 'SBV_Exchange_Rate': Date, USD_VND_Rate, Black_Market_rate, VCB_rate
+2. 'SBV_Interbank_Rate': Date, Term, Rate, Volume
+3. 'SBV_OMO': Ngày, Loại hình giao dịch, Kỳ hạn, Số TV tham gia, Số TV trúng thầu, Khối lượng mua trúng thầu, Lãi suất trúng thầu bên mua, Khối lượng mua đáo hạn, Khối lượng bán trúng thầu, Lãi suất trúng thầu bên bán, Khối lượng bán đáo hạn, Tổng bơm, Tổng hút, Giá trị bơm ròng
+4. 'SBV_Yield_Curve': Date, Term, Spot_Rate_Continuous_Pct, Par_Yield_Pct, Spot_Rate_Annual_Pct
+5. 'SBV_Policy_Rates': Loại lãi suất, Giá trị, Văn bản quyết định, Ngày có hiệu lực
+6. 'US_Exchange_Rate': Date, Broad Trade-Weighted Dollar Index
+7. 'US_Interbank_Rates': Date, EFFR, OBFR, SOFR
+8. 'US_OMO': Ngày, Loại hình giao dịch, Kỳ hạn, Số TV tham gia, Số TV trúng thầu, Khối lượng mua trúng thầu, Lãi suất trúng thầu bên mua, Khối lượng mua đáo hạn, Khối lượng bán trúng thầu, Lãi suất trúng thầu bên bán, Khối lượng bán đáo hạn, Tổng bơm, Tổng hút, Giá trị bơm ròng
+9. 'US_Policy_Rates': Date, Fed Funds Rate, Bank Prime Loan
+10. 'US_Yield_Curve': Date, 1M, 3M, 6M, 1Y, 2Y, 3Y, 5Y, 7Y, 10Y, 20Y, 30Y
+11. 'FedWatch_Probabilities': MEETING DATE, 275-300, 300-325, 325-350, 350-375, 375-400, 400-425, 425-450, 450-475, 475-500, 500-525
 Bạn có thể gọi df = data_dict['Tên_Key'] để xử lý.
 Biến `st` (streamlit) đã được import sẵn. Hãy print() các thống kê nếu có.'''
     

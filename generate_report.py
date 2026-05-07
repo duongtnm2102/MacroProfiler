@@ -2,6 +2,7 @@ import os
 from data_loader import get_all_data
 from agents import economist_agent
 from email_utils import send_daily_report
+from data_processor import process_macro_data
 
 def main():
     print("Bắt đầu tiến trình tạo báo cáo Vĩ mô tự động...")
@@ -9,7 +10,10 @@ def main():
     # 1. Tải toàn bộ dữ liệu mới nhất
     print("Đang tải dữ liệu từ Google Sheets/Drive...")
     data_dict = get_all_data()
-    data_context = "Dữ liệu mới nhất đã được tải. Các bảng dữ liệu hiện có: " + str(list(data_dict.keys()))
+    
+    print("Đang tiền xử lý thống kê (Data Processor)...")
+    data_context = process_macro_data(data_dict)
+    print("Xử lý xong! Dữ liệu tóm tắt đã sẵn sàng đưa vào AI.")
     
     # 2. Đọc file prompt
     prompt_path = "prompt.txt"

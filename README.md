@@ -24,6 +24,8 @@ Hệ thống sử dụng GitHub Actions để tự động thức dậy lúc 8h 
    - `US_POLICY_CSV_URL`: (Tương tự)
    - `US_OMO_CSV_URL`: (Tương tự)
    - `US_YIELD_CSV_URL`: (Tương tự)
+   - `US_EXCHANGE_CSV_URL`: (Tương tự)
+   - `US_INTERBANK_CSV_URL`: (Tương tự)
 
 ### BƯỚC 3: Triển khai Giao diện Web (Streamlit Cloud)
 Giao diện này cho phép bạn truy cập ứng dụng trên Điện thoại để nhắn tin với AI, vẽ biểu đồ mà không cần mở laptop.
