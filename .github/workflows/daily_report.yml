@@ -1,0 +1,41 @@
+name: Send Daily Macro Report
+on:
+  schedule:
+    # 8:00 AM giờ Việt Nam (UTC+7) tương đương với 1:00 AM UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch: # Nút nhấn chạy thủ công (Manual Trigger) trên GitHub
+jobs:
+  run-daily-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Run Report Generator Script
+        env:
+          # Các biến bảo mật sẽ được lấy từ GitHub Secrets
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GMAIL_SENDER: ${{ secrets.GMAIL_SENDER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_RECEIVER: ${{ secrets.GMAIL_RECEIVER }}
+          # URL Dữ liệu
+          SBV_OMO_CSV_URL: ${{ secrets.SBV_OMO_CSV_URL }}
+          SBV_INTERBANK_CSV_URL: ${{ secrets.SBV_INTERBANK_CSV_URL }}
+          SBV_EXCHANGE_CSV_URL: ${{ secrets.SBV_EXCHANGE_CSV_URL }}
+          SBV_FEDWATCH_CSV_URL: ${{ secrets.SBV_FEDWATCH_CSV_URL }}
+          SBV_YIELD_CSV_URL: ${{ secrets.SBV_YIELD_CSV_URL }}
+          US_POLICY_CSV_URL: ${{ secrets.US_POLICY_CSV_URL }}
+          US_OMO_CSV_URL: ${{ secrets.US_OMO_CSV_URL }}
+          US_YIELD_CSV_URL: ${{ secrets.US_YIELD_CSV_URL }}
+        run: |
+          python generate_report.py
