@@ -9,6 +9,26 @@ load_dotenv()
 # Cần cấu hình GROQ_API_KEY trong .env hoặc Streamlit Secrets
 groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
+def call_gemini(system_msg, content, model="gemini-3-flash-preview"):
+    """
+    Hàm gọi API Gemini (Google AI Studio)
+    """
+    try:
+        from google import genai
+        # Khởi tạo client, tự động lấy GEMINI_API_KEY từ biến môi trường
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+        
+        # Gộp chung System Prompt và User Content để dễ xử lý
+        full_prompt = f"--- LỆNH HỆ THỐNG ---\n{system_msg}\n\n--- DỮ LIỆU ĐẦU VÀO ---\n{content}"
+        
+        response = client.models.generate_content(
+            model=model, 
+            contents=full_prompt
+        )
+        return response.text
+    except Exception as e:
+        return f"Lỗi gọi Gemini API: {e}"
+
 def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.6, max_tokens=None):
     """
     Hàm gọi API chung cho các Agents
@@ -117,9 +137,5 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc. TU
     search_context = get_search_context()
     full_context = f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n{search_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."
     
-    messages = [
-        {"role": "system", "content": system_msg},
-        {"role": "user", "content": full_context}
-    ]
-    # Trả về Qwen 32B cho Economist Agent, temp mặc định 0.6
-    return call_groq(messages, model="qwen/qwen3-32b", temperature=0.6)
+    # Sử dụng bộ não siêu khủng Gemini 3 Flash Preview cho việc làm Báo cáo Vĩ mô
+    return call_gemini(system_msg, full_context, model="gemini-3-flash-preview")
