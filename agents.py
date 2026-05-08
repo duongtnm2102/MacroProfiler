@@ -121,5 +121,5 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc. TU
         {"role": "system", "content": system_msg},
         {"role": "user", "content": full_context}
     ]
-    # Trả về Llama-3.3-70b (Model flagship của kiến trúc Groq Compound), temp mặc định 0.6
-    return call_groq(messages, model="llama-3.3-70b-versatile", temperature=0.6)
+    # Trả về Qwen 32B cho Economist Agent, temp mặc định 0.6
+    return call_groq(messages, model="qwen/qwen3-32b", temperature=0.6)
