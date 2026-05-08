@@ -110,9 +110,9 @@ SECTION 5: PHÂN TÍCH CHIẾN LƯỢC (STRATEGIC NARRATIVE)
 
 1. BỨC TRANH LỚN: "LỘ TRÌNH & ÁP LỰC CHÍNH TRỊ"
 
-FedWatch Trajectory: Dựa trên bảng kết quả FedWatch, bắt buộc phải mô tả chi tiết "Cầu thang lãi suất" từ cuộc họp gần nhất đến cuộc họp xa nhất. Phân tích xu hướng của Fed trong 02 năm tiếp theo dựa vào bảng kết quả FedWatch.
+FedWatch Trajectory: Dựa trên bảng kết quả FedWatch, mô tả "Cầu thang lãi suất" từ cuộc họp gần nhất đến cuộc họp xa nhất bằng ĐOẠN VĂN (TUYỆT ĐỐI KHÔNG KẺ BẢNG CHO PHẦN NÀY). Phân tích xu hướng của Fed trong 02 năm tiếp theo.
 
-Chính trị Mỹ: Mâu thuẫn Nhà Trắng vs Fed (Nếu có, cần thu thập các phát ngôn của tổng thống Mỹ, Nhà Trắng, Bộ Tài Chính đối với Fed để kiểm tra mâu thuẫn).
+Chính trị Mỹ: Mâu thuẫn Nhà Trắng vs Fed (Dựa vào thông tin Search Internet, nếu có).
 
 2. GIẢI MÃ VIỆT NAM: "MỆNH LỆNH & THỰC TẾ"
 
