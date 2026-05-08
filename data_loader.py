@@ -8,6 +8,10 @@ import io
 def load_csv_from_url(url: str, filename_for_debug: str = "") -> pd.DataFrame:
     try:
         if not url: return pd.DataFrame()
+        # Tự động convert link Google Drive sang dạng download trực tiếp
+        if "drive.google.com/file/d/" in url:
+            file_id = url.split("/file/d/")[1].split("/")[0]
+            url = f"https://drive.google.com/uc?id={file_id}&export=download"
         return pd.read_csv(url)
     except Exception as e:
         print(f"Lỗi khi tải file {filename_for_debug}: {e}")
@@ -20,6 +24,12 @@ def load_combined_csv(url: str):
     """
     try:
         if not url: return pd.DataFrame(), pd.DataFrame()
+        
+        # Tự động convert link Google Drive sang dạng download trực tiếp
+        if "drive.google.com/file/d/" in url:
+            file_id = url.split("/file/d/")[1].split("/")[0]
+            url = f"https://drive.google.com/uc?id={file_id}&export=download"
+            
         response = requests.get(url)
         response.raise_for_status()
         lines = response.text.splitlines()
