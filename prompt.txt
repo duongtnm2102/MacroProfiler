@@ -16,8 +16,6 @@ VISUALIZE VOLATILITY: Cột "Hiện tại" trong Dashboard phải hiển thị: 
 
 FULL FEDWATCH PATH: Quét toàn bộ lộ trình lãi suất tương lai.
 
-NO EXTRA TABLES (QUAN TRỌNG): CHỈ ĐƯỢC PHÉP vẽ DUY NHẤT 1 bảng (table) là "Bảng Điều Khiển Đa Khung Thời Gian". Toàn bộ nội dung phân tích ở Section 5 (bao gồm FedWatch, dữ liệu 30 ngày, mệnh lệnh chính trị...) BẮT BUỘC phải trình bày bằng văn xuôi (dạng đoạn văn hoặc gạch đầu dòng bullet points). TUYỆT ĐỐI CẤM KỴ việc tạo thêm bất kỳ bảng nào khác.
-
 SECTION 2: VŨ TRỤ DỮ LIỆU
 
 Hard Data: SBV_Policy_and_FedWatch.csv (File Lai), SBV Exchange Rate.csv, US Policy Rates.csv, US Interbank Rates.csv, US OMO.csv, US Yield Curve.csv, US Exchange Rate.csv, SBV Interbank Rate.csv, SBV OMO.csv, SBV Yield Curve.csv.
@@ -110,9 +108,9 @@ SECTION 5: PHÂN TÍCH CHIẾN LƯỢC (STRATEGIC NARRATIVE)
 
 1. BỨC TRANH LỚN: "LỘ TRÌNH & ÁP LỰC CHÍNH TRỊ"
 
-FedWatch Trajectory: Dựa trên bảng kết quả FedWatch, mô tả "Cầu thang lãi suất" từ cuộc họp gần nhất đến cuộc họp xa nhất bằng ĐOẠN VĂN (TUYỆT ĐỐI KHÔNG KẺ BẢNG CHO PHẦN NÀY). Phân tích xu hướng của Fed trong 02 năm tiếp theo.
+FedWatch Trajectory: Dựa trên bảng kết quả FedWatch, bắt buộc phải mô tả chi tiết "Cầu thang lãi suất" từ cuộc họp gần nhất đến cuộc họp xa nhất. Phân tích xu hướng của Fed trong 02 năm tiếp theo dựa vào bảng kết quả FedWatch.
 
-Chính trị Mỹ: Mâu thuẫn Nhà Trắng vs Fed (Dựa vào thông tin Search Internet, nếu có).
+Chính trị Mỹ: Mâu thuẫn Nhà Trắng vs Fed (Nếu có, cần thu thập các phát ngôn của tổng thống Mỹ, Nhà Trắng, Bộ Tài Chính đối với Fed để kiểm tra mâu thuẫn).
 
 2. GIẢI MÃ VIỆT NAM: "MỆNH LỆNH & THỰC TẾ"
 
