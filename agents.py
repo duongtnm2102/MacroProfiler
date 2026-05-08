@@ -9,7 +9,7 @@ load_dotenv()
 # Cần cấu hình GROQ_API_KEY trong .env hoặc Streamlit Secrets
 groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.2):
+def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.2, max_tokens=4000):
     """
     Hàm gọi API chung cho các Agents
     """
@@ -18,7 +18,7 @@ def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.2):
             messages=messages,
             model=model,
             temperature=temperature,
-            max_tokens=4000
+            max_tokens=max_tokens
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -90,5 +90,5 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc.
         {"role": "system", "content": system_msg},
         {"role": "user", "content": f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."}
     ]
-    # Dùng model 70B mạnh nhất để phân tích chuyên sâu
-    return call_groq(messages, model="llama-3.3-70b-versatile", temperature=0.3)
+    # Dùng model openai/gpt-oss-120b và hạ max_tokens xuống 3000 để tránh lỗi TPM Limit
+    return call_groq(messages, model="openai/gpt-oss-120b", temperature=0.3, max_tokens=3000)
