@@ -50,51 +50,39 @@ def get_search_context():
     except Exception as e:
         return f"\n--- THÔNG TIN INTERNET ---\nKhông thể truy cập internet. Tác vụ tính Real Rate hãy dùng CPI = 2.4%. Về chính trị: Xin ghi 'Không có dữ liệu mới cập nhật', tuyệt đối không tự bịa.\n"
 
-def orchestrator_agent(user_input):
+def data_analyst_agent(chat_history_text):
     """
-    Quyết định luồng xử lý:
-    1. Trả về "UPDATE_REPORT" nếu người dùng gõ "Cập nhật", "Làm báo cáo"...
-    2. Trả về "DATA_REQUEST" nếu người dùng hỏi biểu đồ, thống kê.
-    3. Trả về câu trả lời bình thường nếu chỉ là hội thoại.
+    Agent phân tích dữ liệu đa năng dựa trên kiến trúc ReAct (Reasoning and Acting).
+    Nó sẽ đọc câu hỏi, tự sinh code Python lấy dữ liệu, chờ kết quả và phân tích.
     """
-    system_msg = """Bạn là hệ thống phân loại ý định.
-QUY TẮC TỐI THƯỢNG:
-1. Nếu User gõ các từ như "cập nhật", "báo cáo", "làm báo cáo": BẠN PHẢI TRẢ LỜI CÓ CHỨA CHUỖI "UPDATE_REPORT". Ví dụ: "UPDATE_REPORT: Đang cập nhật báo cáo."
-2. Nếu User gõ "vẽ", "thống kê", "biểu đồ": BẠN PHẢI TRẢ LỜI CÓ CHỨA CHUỖI "DATA_REQUEST".
-3. Nếu User chỉ chào hỏi: Trả lời giao tiếp bình thường."""
-    # Sử dụng Gemini 3 Flash cho Orchestrator
-    return call_gemini(system_msg, user_input, model="gemini-3-flash-preview")
+    system_msg = '''Bạn là Data Analyst Agent chuyên về Kinh tế Vĩ mô.
+Quy tắc hoạt động (ReAct Loop):
+1. Khi được hỏi một câu phức tạp cần số liệu, HÃY VIẾT CODE Python để tính toán. Đặt code vào block ```python ... ```.
+2. LUÔN LUÔN dùng `print()` để in kết quả ra màn hình. Tôi sẽ lấy kết quả in ra đó mớm lại cho bạn ở bước tiếp theo dưới dạng "KẾT QUẢ CHẠY MÃ HỆ THỐNG".
+3. Chỉ vẽ biểu đồ bằng `st.pyplot(fig)` nếu người dùng CÓ YÊU CẦU vẽ. Nếu không, chỉ cần in số liệu để phân tích chữ.
+4. NẾU BẠN NHÌN THẤY "KẾT QUẢ CHẠY MÃ HỆ THỐNG" trong lịch sử chat, nghĩa là code của bạn vừa chạy xong. Dựa vào kết quả đó, hãy đưa ra NHẬN XÉT VÀ PHÂN TÍCH CUỐI CÙNG bằng lời văn. ĐỪNG sinh thêm code nữa trừ khi kết quả bị lỗi.
 
-def coder_agent(task_description):
-    """
-    Sinh code Python dựa trên yêu cầu biểu đồ/thống kê.
-    """
-    system_msg = '''Bạn là Coder AI chuyên về Data Science (Python, Pandas, Matplotlib).
-Nhiệm vụ: Dựa vào yêu cầu, hãy viết script Python.
-Luôn đặt code của bạn trong markdown ```python ... ```.
-Để hiển thị biểu đồ trên Streamlit, HÃY DÙNG `st.pyplot(fig)` thay vì `plt.show()` hoặc `plt.savefig()`.
-Các file CSV đã được load sẵn thành một dictionary tên là `data_dict`. 
-Keys và Cấu trúc cột của từng file (để bạn không phải tốn token gọi df.head()):
-1. 'SBV_Exchange_Rate': Date, USD_VND_Rate, Black_Market_rate, VCB_rate
-2. 'SBV_Interbank_Rate': Date, Term, Rate, Volume
-3. 'SBV_OMO': Ngày, Loại hình giao dịch, Kỳ hạn, Số TV tham gia, Số TV trúng thầu, Khối lượng mua trúng thầu, Lãi suất trúng thầu bên mua, Khối lượng mua đáo hạn, Khối lượng bán trúng thầu, Lãi suất trúng thầu bên bán, Khối lượng bán đáo hạn, Tổng bơm, Tổng hút, Giá trị bơm ròng
-4. 'SBV_Yield_Curve': Date, Term, Spot_Rate_Continuous_Pct, Par_Yield_Pct, Spot_Rate_Annual_Pct
-5. 'SBV_Policy_Rates': Loại lãi suất, Giá trị, Văn bản quyết định, Ngày có hiệu lực
-6. 'US_Exchange_Rate': Date, Broad Trade-Weighted Dollar Index
-7. 'US_Interbank_Rates': Date, EFFR, OBFR, SOFR
-8. 'US_OMO': Ngày, Loại hình giao dịch, Kỳ hạn, Số TV tham gia, Số TV trúng thầu, Khối lượng mua trúng thầu, Lãi suất trúng thầu bên mua, Khối lượng mua đáo hạn, Khối lượng bán trúng thầu, Lãi suất trúng thầu bên bán, Khối lượng bán đáo hạn, Tổng bơm, Tổng hút, Giá trị bơm ròng
-9. 'US_Policy_Rates': Date, Fed Funds Rate, Bank Prime Loan
-10. 'US_Yield_Curve': Date, 1M, 3M, 6M, 1Y, 2Y, 3Y, 5Y, 7Y, 10Y, 20Y, 30Y
-11. 'FedWatch_Probabilities': MEETING DATE, 275-300, 300-325, 325-350, 350-375, 375-400, 400-425, 425-450, 450-475, 475-500, 500-525
-Bạn có thể gọi df = data_dict['Tên_Key'] để xử lý.
-Biến `st` (streamlit) đã được import sẵn. Hãy print() các thống kê nếu có.'''
-    
-    # Sử dụng Gemini 3 Flash cho việc sinh code
-    return call_gemini(system_msg, task_description, model="gemini-3-flash-preview")
+Cấu trúc biến `data_dict` (luôn có sẵn, không cần đọc từ file):
+- 'SBV_Exchange_Rate': Date, USD_VND_Rate, Black_Market_rate, VCB_rate
+- 'SBV_Interbank_Rate': Date, Term, Rate, Volume
+- 'SBV_OMO': Ngày, Loại hình giao dịch, Kỳ hạn, Số TV tham gia, Số TV trúng thầu, Khối lượng mua trúng thầu, Lãi suất trúng thầu bên mua, Khối lượng mua đáo hạn, Khối lượng bán trúng thầu, Lãi suất trúng thầu bên bán, Khối lượng bán đáo hạn, Tổng bơm, Tổng hút, Giá trị bơm ròng
+- 'SBV_Yield_Curve': Date, Term, Spot_Rate_Continuous_Pct, Par_Yield_Pct, Spot_Rate_Annual_Pct
+- 'SBV_Policy_Rates': Loại lãi suất, Giá trị, Văn bản quyết định, Ngày có hiệu lực
+- 'US_Exchange_Rate': Date, Broad Trade-Weighted Dollar Index
+- 'US_Interbank_Rates': Date, EFFR, OBFR, SOFR
+- 'US_OMO': Ngày, Loại hình giao dịch...
+- 'US_Policy_Rates': Date, Fed Funds Rate, Bank Prime Loan
+- 'US_Yield_Curve': Date, 1M, 3M, 6M, 1Y, 2Y, 3Y, 5Y, 7Y, 10Y, 20Y, 30Y
+- 'FedWatch_Probabilities': MEETING DATE, 275-300...
 
-def economist_agent(prompt_content, data_context):
+Các thư viện đã import: `pd` (pandas), `np` (numpy), `plt` (matplotlib.pyplot), `st` (streamlit).
+Ví dụ truy cập: `df = data_dict['US_Policy_Rates']`
+'''
+    return call_gemini(system_msg, chat_history_text, model="gemini-3-flash-preview")
+
+def generate_strategic_report(prompt_content, data_context):
     """
-    Dựa vào data và system prompt (prompt.txt) để viết Báo cáo.
+    Chức năng cố định: Dựa vào data và system prompt để viết Báo cáo.
     """
     system_msg = f"""Bạn là Chuyên gia Phân tích Chiến lược Vĩ mô.
 Dưới đây là bộ chỉ dẫn (System Instructions) của bạn:

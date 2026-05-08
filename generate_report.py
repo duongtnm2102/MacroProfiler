@@ -1,6 +1,6 @@
 import os
 from data_loader import get_all_data
-from agents import economist_agent
+from agents import generate_strategic_report
 from email_utils import send_daily_report
 from data_processor import process_macro_data
 
@@ -26,7 +26,7 @@ def main():
         
     # 3. Tạo báo cáo qua AI
     print("Đang chạy Economist AI để phân tích chiến lược...")
-    report_md = economist_agent(prompt_content, data_context)
+    report_md = generate_strategic_report(prompt_content, data_context)
     
     # 4. Gửi email
     print("Đang định dạng HTML và gửi Email...")
