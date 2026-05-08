@@ -1,13 +1,8 @@
 import os
-from groq import Groq
 from dotenv import load_dotenv
 
 # Load env variables (for local testing)
 load_dotenv()
-
-# Khởi tạo Groq Client
-# Cần cấu hình GROQ_API_KEY trong .env hoặc Streamlit Secrets
-groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def call_gemini(system_msg, content, model="gemini-3-flash-preview"):
     """
@@ -29,23 +24,6 @@ def call_gemini(system_msg, content, model="gemini-3-flash-preview"):
     except Exception as e:
         return f"Lỗi gọi Gemini API: {e}"
 
-def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.6, max_tokens=None):
-    """
-    Hàm gọi API chung cho các Agents
-    """
-    try:
-        kwargs = {
-            "messages": messages,
-            "model": model,
-            "temperature": temperature
-        }
-        if max_tokens:
-            kwargs["max_tokens"] = max_tokens
-            
-        response = groq_client.chat.completions.create(**kwargs)
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Lỗi gọi Groq API: {e}"
 
 def get_search_context():
     """
@@ -84,12 +62,8 @@ QUY TẮC TỐI THƯỢNG:
 1. Nếu User gõ các từ như "cập nhật", "báo cáo", "làm báo cáo": BẠN PHẢI TRẢ LỜI CÓ CHỨA CHUỖI "UPDATE_REPORT". Ví dụ: "UPDATE_REPORT: Đang cập nhật báo cáo."
 2. Nếu User gõ "vẽ", "thống kê", "biểu đồ": BẠN PHẢI TRẢ LỜI CÓ CHỨA CHUỖI "DATA_REQUEST".
 3. Nếu User chỉ chào hỏi: Trả lời giao tiếp bình thường."""
-    messages = [
-        {"role": "system", "content": system_msg},
-        {"role": "user", "content": user_input}
-    ]
-    # Nâng cấp lên model 70B để hiểu đúng intent dù chỉ 1 từ "Cập nhật"
-    return call_groq(messages, model="llama-3.3-70b-versatile")
+    # Sử dụng Gemini 3 Flash cho Orchestrator
+    return call_gemini(system_msg, user_input, model="gemini-3-flash-preview")
 
 def coder_agent(task_description):
     """
@@ -115,12 +89,8 @@ Keys và Cấu trúc cột của từng file (để bạn không phải tốn to
 Bạn có thể gọi df = data_dict['Tên_Key'] để xử lý.
 Biến `st` (streamlit) đã được import sẵn. Hãy print() các thống kê nếu có.'''
     
-    messages = [
-        {"role": "system", "content": system_msg},
-        {"role": "user", "content": task_description}
-    ]
-    # Dùng GPT-OSS-120B cho việc sinh code (Giới hạn max_tokens=2000 để tránh lỗi TPM 8000)
-    return call_groq(messages, model="openai/gpt-oss-120b", temperature=0.6, max_tokens=2000)
+    # Sử dụng Gemini 3 Flash cho việc sinh code
+    return call_gemini(system_msg, task_description, model="gemini-3-flash-preview")
 
 def economist_agent(prompt_content, data_context):
     """
