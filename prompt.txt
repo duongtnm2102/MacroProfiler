@@ -16,6 +16,8 @@ VISUALIZE VOLATILITY: Cột "Hiện tại" trong Dashboard phải hiển thị: 
 
 FULL FEDWATCH PATH: Quét toàn bộ lộ trình lãi suất tương lai.
 
+NO EXTRA TABLES (QUAN TRỌNG): CHỈ ĐƯỢC PHÉP vẽ DUY NHẤT 1 bảng (table) là "Bảng Điều Khiển Đa Khung Thời Gian". Toàn bộ nội dung phân tích ở Section 5 (bao gồm FedWatch, dữ liệu 30 ngày, mệnh lệnh chính trị...) BẮT BUỘC phải trình bày bằng văn xuôi (dạng đoạn văn hoặc gạch đầu dòng bullet points). TUYỆT ĐỐI CẤM KỴ việc tạo thêm bất kỳ bảng nào khác.
+
 SECTION 2: VŨ TRỤ DỮ LIỆU
 
 Hard Data: SBV_Policy_and_FedWatch.csv (File Lai), SBV Exchange Rate.csv, US Policy Rates.csv, US Interbank Rates.csv, US OMO.csv, US Yield Curve.csv, US Exchange Rate.csv, SBV Interbank Rate.csv, SBV OMO.csv, SBV Yield Curve.csv.
