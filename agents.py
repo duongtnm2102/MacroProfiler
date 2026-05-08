@@ -9,17 +9,20 @@ load_dotenv()
 # Cần cấu hình GROQ_API_KEY trong .env hoặc Streamlit Secrets
 groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.2, max_tokens=4000):
+def call_groq(messages, model="llama-3.1-8b-instant", temperature=0.6, max_tokens=None):
     """
     Hàm gọi API chung cho các Agents
     """
     try:
-        response = groq_client.chat.completions.create(
-            messages=messages,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
+        kwargs = {
+            "messages": messages,
+            "model": model,
+            "temperature": temperature
+        }
+        if max_tokens:
+            kwargs["max_tokens"] = max_tokens
+            
+        response = groq_client.chat.completions.create(**kwargs)
         return response.choices[0].message.content
     except Exception as e:
         return f"Lỗi gọi Groq API: {e}"
@@ -96,8 +99,8 @@ Biến `st` (streamlit) đã được import sẵn. Hãy print() các thống k�
         {"role": "system", "content": system_msg},
         {"role": "user", "content": task_description}
     ]
-    # Dùng model Qwen 3 32B theo đúng ID trên Groq
-    return call_groq(messages, model="qwen/qwen3-32b", temperature=0.1)
+    # Dùng GPT-OSS-120B cho việc sinh code (Giới hạn max_tokens=2000 để tránh lỗi TPM 8000)
+    return call_groq(messages, model="openai/gpt-oss-120b", temperature=0.6, max_tokens=2000)
 
 def economist_agent(prompt_content, data_context):
     """
@@ -118,5 +121,5 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc. TU
         {"role": "system", "content": system_msg},
         {"role": "user", "content": full_context}
     ]
-    # Dùng model openai/gpt-oss-120b, nhiệt độ 0.1 (tránh lỗi EOS tự động ngắt dòng của temp=0)
-    return call_groq(messages, model="openai/gpt-oss-120b", temperature=0.1, max_tokens=3000)
+    # Trả về Llama-3.3-70b (Model flagship của kiến trúc Groq Compound), temp mặc định 0.6
+    return call_groq(messages, model="llama-3.3-70b-versatile", temperature=0.6)
