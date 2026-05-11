@@ -93,7 +93,12 @@ with tab_dash:
             df1 = df_ib.copy()
             df1['Date'] = safe_to_datetime(df1['Date'])
             df1['Term_Clean'] = df1['Term'].astype(str).str.strip().str.upper()
-            df1 = df1[(df1['Date'] >= pd.to_datetime('2025-01-01')) & (df1['Term_Clean'] == 'ON')].sort_values('Date')
+            
+            # Tự động tìm kỳ hạn qua đêm (có thể là ON, O/N, QUA DEM)
+            on_terms = [t for t in df1['Term_Clean'].unique() if t in ['ON', 'O/N', 'QUA ĐÊM', 'QUA DEM', 'OVERNIGHT']]
+            target_term = on_terms[0] if on_terms else 'ON'
+            
+            df1 = df1[(df1['Date'] >= pd.to_datetime('2025-01-01')) & (df1['Term_Clean'] == target_term)].sort_values('Date')
             if not df1.empty:
                 # Xử lý Volume nếu có dấu phẩy
                 df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
@@ -105,7 +110,7 @@ with tab_dash:
                 fig1.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
                 st.plotly_chart(fig1, use_container_width=True)
             else:
-                st.info("Không có dữ liệu Interbank ON từ 01/01/2025.")
+                st.info(f"Không có dữ liệu Interbank kỳ hạn '{target_term}' từ 01/01/2025. Các kỳ hạn trong data: {', '.join(df_ib['Term'].unique()[:10])}")
 
         # Biểu đồ 2: OMO Bơm ròng luỹ kế (>= 01/01/2025)
         st.markdown("#### 2. Cumulative Net OMO Injection")
@@ -167,7 +172,7 @@ with tab_dash:
                     
                 if rates_vn:
                     fig3.add_trace(go.Scatter(x=terms_vn_mapped, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve',
-                                              text=[f"{r}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
+                                              text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
             
         fig3.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
         fig3.update_xaxes(categoryorder='array', categoryarray=std_order)
@@ -202,7 +207,26 @@ with tab_dash:
         # Bảng 5: FedWatch
         st.markdown("#### 5. FedWatch Probabilities")
         if not df_fed.empty:
-            st.dataframe(df_fed, use_container_width=True)
+            def highlight_prob(val):
+                try:
+                    v = float(str(val).replace('%', '').strip())
+                    if v == 0: 
+                        return 'color: #333333;' # Đen mờ cho xác suất 0%
+                    
+                    # Tạo hiệu ứng xanh lá đậm dần theo tỷ lệ phần trăm
+                    alpha = max(0.2, v / 100)
+                    return f'background-color: rgba(0, 255, 0, {alpha}); color: white;'
+                except:
+                    return ''
+                    
+            try:
+                # Dùng applymap (hoặc map ở pandas đời mới) để tô màu
+                styled_fed = df_fed.style.applymap(highlight_prob, subset=df_fed.columns[1:])
+                st.dataframe(styled_fed, use_container_width=True)
+            except AttributeError:
+                # Fallback nếu dùng pandas >= 2.1 (applymap bị đổi thành map)
+                styled_fed = df_fed.style.map(highlight_prob, subset=df_fed.columns[1:])
+                st.dataframe(styled_fed, use_container_width=True)
 
 
 with tab_chat:
