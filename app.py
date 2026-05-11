@@ -107,9 +107,9 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
             full_idx = pd.date_range(start=df1.index.min(), end=df1.index.max(), freq='D')
             df1 = df1.reindex(full_idx)
             
-            # Điền dữ liệu cho các ngày bị trống (Lễ, cuối tuần, thiếu data)
-            df1['Volume'] = df1['Volume'].fillna(0)  # Ngày không GD volume = 0
-            df1['Rate'] = df1['Rate'].ffill()        # Lãi suất lấy của ngày gần nhất trước đó
+            # Điền dữ liệu cho các ngày bị trống (Lễ, cuối tuần, thiếu data) bằng dữ liệu của ngày gần nhất trước đó
+            df1['Volume'] = df1['Volume'].ffill().fillna(0)
+            df1['Rate'] = df1['Rate'].ffill().fillna(0)
             
             df1 = df1.reset_index().rename(columns={'index': 'Date'})
             df1['Date_Str'] = df1['Date'].dt.strftime('%d/%m/%Y')
