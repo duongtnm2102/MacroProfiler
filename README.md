@@ -1,6 +1,6 @@
-# Longitudinal Strategic Macro-Profiler (Replica)
+# Macro Watch 
 
-Hệ thống phân tích vĩ mô tự động 100% Online, Miễn phí, sử dụng AI (Groq API) với kiến trúc Multi-Agent và giao diện Chat tương tác (Streamlit).
+Hệ thống theo dõi và phân tích vĩ mô Việt Nam bằng AI tự động miễn phí.
 
 ## 🚀 Hướng dẫn Triển khai (Deployment)
 
