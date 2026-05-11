@@ -7,3 +7,4 @@ markdown
 duckduckgo-search
 google-genai
 plotly
+streamlit-javascript

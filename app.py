@@ -10,6 +10,7 @@ from data_loader import get_all_data
 from email_utils import send_daily_report
 from agents import generate_strategic_report, data_analyst_agent
 from data_processor import process_macro_data
+from streamlit_javascript import st_javascript
 
 st.set_page_config(page_title="Macro Watch", page_icon="📈", layout="wide")
 
@@ -226,6 +227,10 @@ def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
 tab_dash, tab_chat = st.tabs(["📺 DASHBOARD MẶC ĐỊNH", "💬 AI VĨ MÔ"])
 
 with tab_dash:
+    # --- ĐO KÍCH THƯỚC MÀN HÌNH ĐỂ NHẬN DIỆN MOBILE ---
+    ui_width = st_javascript("window.innerWidth")
+    is_mobile = ui_width > 0 and ui_width <= 768
+
     data_dict = st.session_state.data_dict
     if not data_dict:
         st.warning("Đang tải dữ liệu...")
@@ -237,113 +242,163 @@ with tab_dash:
         df_fx = data_dict.get('SBV_Exchange_Rate', pd.DataFrame())
         df_fed = data_dict.get('FedWatch_Probabilities', pd.DataFrame())
 
-        # Biểu đồ 1: Interbank ON
-        st.markdown("#### 1. Interbank ON Rate & Volume")
-        t1_single, t1_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
-        with t1_single:
-            d1_st, d1_en = safe_date_range("Chọn khoảng thời gian", 'ib_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-            f1, h1, term1 = plot_interbank(df_ib, d1_st, d1_en, show_legend=True)
-            if h1: st.plotly_chart(f1, use_container_width=True, key="ib_single_chart")
+        def highlight_prob(val):
+            try:
+                v = float(str(val).replace('%', '').strip())
+                if v == 0: 
+                    return 'color: #333333;'
+                alpha = max(0.2, v / 100)
+                return f'background-color: rgba(0, 255, 0, {alpha}); color: white;'
+            except:
+                return ''
+
+        if is_mobile:
+            # ==========================================
+            # GIAO DIỆN MOBILE (TỐI GIẢN)
+            # ==========================================
+            
+            # Biểu đồ 1: Interbank ON
+            st.markdown("#### 1. Interbank ON Rate & Volume")
+            f1, h1, _ = plot_interbank(df_ib, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
+            if h1: st.plotly_chart(f1, use_container_width=True, key="m_ib_chart")
             else: st.info("Không có dữ liệu.")
             
-        with t1_compare:
-            c1_1, c1_2 = st.columns(2)
-            with c1_1:
-                st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
-                f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=False)
-                if h1_c1: st.plotly_chart(f1_c1, use_container_width=True, key="ib_c1_chart")
-            with c1_2:
-                st_2, en_2 = safe_date_range("Khung thời gian 2", 'ib_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-                f1_c2, h1_c2, _ = plot_interbank(df_ib, st_2, en_2, show_legend=True)
-                if h1_c2: st.plotly_chart(f1_c2, use_container_width=True, key="ib_c2_chart")
-
-        # Biểu đồ 2: OMO
-        st.markdown("---")
-        st.markdown("#### 2. Cumulative Net OMO Injection")
-        t2_single, t2_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
-        with t2_single:
-            d2_st, d2_en = safe_date_range("Chọn khoảng thời gian", 'omo_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-            f2, h2 = plot_omo(df_omo, d2_st, d2_en, show_legend=True)
-            if h2: st.plotly_chart(f2, use_container_width=True, key="omo_single_chart")
+            # Biểu đồ 2: OMO
+            st.markdown("---")
+            st.markdown("#### 2. Cumulative Net OMO Injection")
+            f2, h2 = plot_omo(df_omo, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
+            if h2: st.plotly_chart(f2, use_container_width=True, key="m_omo_chart")
             else: st.info("Không có dữ liệu.")
             
-        with t2_compare:
-            c2_1, c2_2 = st.columns(2)
-            with c2_1:
-                st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
-                f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=False)
-                if h2_c1: st.plotly_chart(f2_c1, use_container_width=True, key="omo_c1_chart")
-            with c2_2:
-                st_22, en_22 = safe_date_range("Khung thời gian 2", 'omo_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-                f2_c2, h2_c2 = plot_omo(df_omo, st_22, en_22, show_legend=True)
-                if h2_c2: st.plotly_chart(f2_c2, use_container_width=True, key="omo_c2_chart")
-
-        # Biểu đồ 3: Yield Curve
-        st.markdown("---")
-        st.markdown("#### 3. Yield Curve")
-        tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
-        
-        with tab_latest:
+            # Biểu đồ 3: Yield Curve
+            st.markdown("---")
+            st.markdown("#### 3. Yield Curve")
             fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
-            if has_data3:
-                st.plotly_chart(fig3, use_container_width=True, key="yc_single_chart")
-            else:
-                st.info("Không có dữ liệu Yield Curve.")
-                
-        with tab_compare:
-            col_c1, col_c2 = st.columns(2)
-            with col_c1:
-                date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today") - pd.Timedelta(days=30), key="yc1")
-                fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
-                if h1: st.plotly_chart(fig_c1, use_container_width=True, key="yc_c1_chart")
-            with col_c2:
-                date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today"), key="yc2")
-                fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
-                if h2: st.plotly_chart(fig_c2, use_container_width=True, key="yc_c2_chart")
-
-        # Biểu đồ 4: Exchange Rates
-        st.markdown("---")
-        st.markdown("#### 4. Exchange Rates")
-        t4_single, t4_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
-        with t4_single:
-            d4_st, d4_en = safe_date_range("Chọn khoảng thời gian", 'fx_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-            f4, h4, df_out4 = plot_exchange_rate(df_fx, d4_st, d4_en, show_legend=True)
+            if has_data3: st.plotly_chart(fig3, use_container_width=True, key="m_yc_chart")
+            else: st.info("Không có dữ liệu Yield Curve.")
+            
+            # Biểu đồ 4: Exchange Rates
+            st.markdown("---")
+            st.markdown("#### 4. Exchange Rates")
+            f4, h4, df_out4 = plot_exchange_rate(df_fx, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
             if h4: 
-                st.plotly_chart(f4, use_container_width=True, key="fx_single_chart")
+                st.plotly_chart(f4, use_container_width=True, key="m_fx_chart")
                 st.dataframe(df_out4.sort_values('Date', ascending=False), use_container_width=True)
             else: st.info("Không có dữ liệu.")
             
-        with t4_compare:
-            c4_1, c4_2 = st.columns(2)
-            with c4_1:
-                st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
-                f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=False)
-                if h4_c1: st.plotly_chart(f4_c1, use_container_width=True, key="fx_c1_chart")
-            with c4_2:
-                st_42, en_42 = safe_date_range("Khung thời gian 2", 'fx_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-                f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, st_42, en_42, show_legend=True)
-                if h4_c2: st.plotly_chart(f4_c2, use_container_width=True, key="fx_c2_chart")
-
-        # Bảng 5: FedWatch
-        st.markdown("---")
-        st.markdown("#### 5. FedWatch Probabilities")
-        if not df_fed.empty:
-            def highlight_prob(val):
+            # Bảng 5: FedWatch
+            st.markdown("---")
+            st.markdown("#### 5. FedWatch Probabilities")
+            if not df_fed.empty:
                 try:
-                    v = float(str(val).replace('%', '').strip())
-                    if v == 0: 
-                        return 'color: #333333;'
-                    alpha = max(0.2, v / 100)
-                    return f'background-color: rgba(0, 255, 0, {alpha}); color: white;'
-                except:
-                    return ''
+                    styled_fed = df_fed.style.applymap(highlight_prob, subset=df_fed.columns[1:])
+                    st.dataframe(styled_fed, use_container_width=True)
+                except AttributeError:
+                    styled_fed = df_fed.style.map(highlight_prob, subset=df_fed.columns[1:])
+                    st.dataframe(styled_fed, use_container_width=True)
+
+        else:
+            # ==========================================
+            # GIAO DIỆN DESKTOP (ĐẦY ĐỦ TÍNH NĂNG)
+            # ==========================================
+            
+            # Biểu đồ 1: Interbank ON
+            st.markdown("#### 1. Interbank ON Rate & Volume")
+            t1_single, t1_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
+            with t1_single:
+                d1_st, d1_en = safe_date_range("Chọn khoảng thời gian", 'ib_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                f1, h1, term1 = plot_interbank(df_ib, d1_st, d1_en, show_legend=True)
+                if h1: st.plotly_chart(f1, use_container_width=True, key="ib_single_chart")
+                else: st.info("Không có dữ liệu.")
+                
+            with t1_compare:
+                c1_1, c1_2 = st.columns(2)
+                with c1_1:
+                    st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                    f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=False)
+                    if h1_c1: st.plotly_chart(f1_c1, use_container_width=True, key="ib_c1_chart")
+                with c1_2:
+                    st_2, en_2 = safe_date_range("Khung thời gian 2", 'ib_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                    f1_c2, h1_c2, _ = plot_interbank(df_ib, st_2, en_2, show_legend=True)
+                    if h1_c2: st.plotly_chart(f1_c2, use_container_width=True, key="ib_c2_chart")
+
+            # Biểu đồ 2: OMO
+            st.markdown("---")
+            st.markdown("#### 2. Cumulative Net OMO Injection")
+            t2_single, t2_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
+            with t2_single:
+                d2_st, d2_en = safe_date_range("Chọn khoảng thời gian", 'omo_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                f2, h2 = plot_omo(df_omo, d2_st, d2_en, show_legend=True)
+                if h2: st.plotly_chart(f2, use_container_width=True, key="omo_single_chart")
+                else: st.info("Không có dữ liệu.")
+                
+            with t2_compare:
+                c2_1, c2_2 = st.columns(2)
+                with c2_1:
+                    st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                    f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=False)
+                    if h2_c1: st.plotly_chart(f2_c1, use_container_width=True, key="omo_c1_chart")
+                with c2_2:
+                    st_22, en_22 = safe_date_range("Khung thời gian 2", 'omo_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                    f2_c2, h2_c2 = plot_omo(df_omo, st_22, en_22, show_legend=True)
+                    if h2_c2: st.plotly_chart(f2_c2, use_container_width=True, key="omo_c2_chart")
+
+            # Biểu đồ 3: Yield Curve
+            st.markdown("---")
+            st.markdown("#### 3. Yield Curve")
+            tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
+            
+            with tab_latest:
+                fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
+                if has_data3:
+                    st.plotly_chart(fig3, use_container_width=True, key="yc_single_chart")
+                else:
+                    st.info("Không có dữ liệu Yield Curve.")
                     
-            try:
-                styled_fed = df_fed.style.applymap(highlight_prob, subset=df_fed.columns[1:])
-                st.dataframe(styled_fed, use_container_width=True)
-            except AttributeError:
-                styled_fed = df_fed.style.map(highlight_prob, subset=df_fed.columns[1:])
-                st.dataframe(styled_fed, use_container_width=True)
+            with tab_compare:
+                col_c1, col_c2 = st.columns(2)
+                with col_c1:
+                    date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today") - pd.Timedelta(days=30), key="yc1")
+                    fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
+                    if h1: st.plotly_chart(fig_c1, use_container_width=True, key="yc_c1_chart")
+                with col_c2:
+                    date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today"), key="yc2")
+                    fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
+                    if h2: st.plotly_chart(fig_c2, use_container_width=True, key="yc_c2_chart")
+
+            # Biểu đồ 4: Exchange Rates
+            st.markdown("---")
+            st.markdown("#### 4. Exchange Rates")
+            t4_single, t4_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
+            with t4_single:
+                d4_st, d4_en = safe_date_range("Chọn khoảng thời gian", 'fx_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                f4, h4, df_out4 = plot_exchange_rate(df_fx, d4_st, d4_en, show_legend=True)
+                if h4: 
+                    st.plotly_chart(f4, use_container_width=True, key="fx_single_chart")
+                    st.dataframe(df_out4.sort_values('Date', ascending=False), use_container_width=True)
+                else: st.info("Không có dữ liệu.")
+                
+            with t4_compare:
+                c4_1, c4_2 = st.columns(2)
+                with c4_1:
+                    st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                    f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=False)
+                    if h4_c1: st.plotly_chart(f4_c1, use_container_width=True, key="fx_c1_chart")
+                with c4_2:
+                    st_42, en_42 = safe_date_range("Khung thời gian 2", 'fx_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                    f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, st_42, en_42, show_legend=True)
+                    if h4_c2: st.plotly_chart(f4_c2, use_container_width=True, key="fx_c2_chart")
+
+            # Bảng 5: FedWatch
+            st.markdown("---")
+            st.markdown("#### 5. FedWatch Probabilities")
+            if not df_fed.empty:
+                try:
+                    styled_fed = df_fed.style.applymap(highlight_prob, subset=df_fed.columns[1:])
+                    st.dataframe(styled_fed, use_container_width=True)
+                except AttributeError:
+                    styled_fed = df_fed.style.map(highlight_prob, subset=df_fed.columns[1:])
+                    st.dataframe(styled_fed, use_container_width=True)
 
 with tab_chat:
     for message in st.session_state.messages:
