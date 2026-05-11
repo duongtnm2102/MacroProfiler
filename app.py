@@ -13,12 +13,17 @@ from data_processor import process_macro_data
 
 st.set_page_config(page_title="Macro Watch", page_icon="📈", layout="wide")
 
-# CSS Phong cách Bloomberg
+# CSS Phong cách Bloomberg & Tối ưu khoảng trống
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
     .stDeployButton {display:none;}
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -76,7 +81,7 @@ def execute_python_code(code: str, data_dict: dict):
     return redirected_output.getvalue(), error_msg
 
 
-def plot_interbank(df_ib, start_date, end_date, show_legend=True, legend_pos='right'):
+def plot_interbank(df_ib, start_date, end_date, show_legend=True):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     has_data = False
     target_term = 'ON'
@@ -93,16 +98,19 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True, legend_pos='ri
             has_data = True
             df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
             df1['Rate'] = pd.to_numeric(df1['Rate'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+            df1['Date_Str'] = df1['Date'].dt.strftime('%d/%m/%Y')
             
-            fig.add_trace(go.Bar(x=df1['Date'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)', showlegend=show_legend), secondary_y=False)
-            fig.add_trace(go.Scatter(x=df1['Date'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2), showlegend=show_legend), secondary_y=True)
+            fig.add_trace(go.Bar(x=df1['Date_Str'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)', showlegend=show_legend), secondary_y=False)
+            fig.add_trace(go.Scatter(x=df1['Date_Str'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2), showlegend=show_legend), secondary_y=True)
             
-    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
-    if legend_pos == 'left':
-        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
+    fig.update_layout(
+        template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),
+        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+    )
+    fig.update_xaxes(type='category', nticks=15)
     return fig, has_data, target_term
 
-def plot_omo(df_omo, start_date, end_date, show_legend=True, legend_pos='right'):
+def plot_omo(df_omo, start_date, end_date, show_legend=True):
     fig = go.Figure()
     has_data = False
     if not df_omo.empty:
@@ -113,14 +121,17 @@ def plot_omo(df_omo, start_date, end_date, show_legend=True, legend_pos='right')
             has_data = True
             df2['Giá trị bơm ròng'] = pd.to_numeric(df2['Giá trị bơm ròng'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
             df2['Cumulative'] = df2['Giá trị bơm ròng'].cumsum()
-            fig.add_trace(go.Scatter(x=df2['Ngày'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2), showlegend=show_legend))
+            df2['Date_Str'] = df2['Ngày'].dt.strftime('%d/%m/%Y')
+            fig.add_trace(go.Scatter(x=df2['Date_Str'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2), showlegend=show_legend))
             
-    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
-    if legend_pos == 'left':
-        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
+    fig.update_layout(
+        template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),
+        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+    )
+    fig.update_xaxes(type='category', nticks=15)
     return fig, has_data
 
-def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", show_legend=True, legend_pos='right'):
+def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", show_legend=True):
     fig = go.Figure()
     vn_term_map = {
         '1 tháng': '1M', '3 tháng': '3M', '6 tháng': '6M', '9 tháng': '9M',
@@ -166,13 +177,14 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
                 fig.add_trace(go.Scatter(x=terms_vn_mapped, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve', showlegend=show_legend,
                                           text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
 
-    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title)
-    if legend_pos == 'left':
-        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
+    fig.update_layout(
+        template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title,
+        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+    )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
 
-def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True, legend_pos='right'):
+def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
     fig = go.Figure()
     has_data = False
     df_out = pd.DataFrame()
@@ -188,16 +200,20 @@ def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True, legend_pos
                     if col in df4_filter.columns:
                         df4_filter[col] = pd.to_numeric(df4_filter[col].astype(str).str.replace(',', ''), errors='coerce')
                 
+                df4_filter['Date_Str'] = df4_filter['Date'].dt.strftime('%d/%m/%Y')
+                
                 if 'USD_VND_Rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend))
+                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend))
                 if 'VCB_rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend))
+                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend))
                 if 'Black_Market_rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend))
+                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend))
                     
-    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
-    if legend_pos == 'left':
-        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
+    fig.update_layout(
+        template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),
+        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+    )
+    fig.update_xaxes(type='category', nticks=15)
     return fig, has_data, df_out
 
 
@@ -216,7 +232,6 @@ with tab_dash:
         df_fed = data_dict.get('FedWatch_Probabilities', pd.DataFrame())
 
         # Biểu đồ 1: Interbank ON
-        st.markdown("---")
         st.markdown("#### 1. Interbank ON Rate & Volume")
         t1_single, t1_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
         with t1_single:
