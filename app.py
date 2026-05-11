@@ -76,7 +76,7 @@ def execute_python_code(code: str, data_dict: dict):
     return redirected_output.getvalue(), error_msg
 
 
-def plot_interbank(df_ib, start_date, end_date, show_legend=True):
+def plot_interbank(df_ib, start_date, end_date, show_legend=True, legend_pos='right'):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     has_data = False
     target_term = 'ON'
@@ -98,9 +98,11 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
             fig.add_trace(go.Scatter(x=df1['Date'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2), showlegend=show_legend), secondary_y=True)
             
     fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
+    if legend_pos == 'left':
+        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
     return fig, has_data, target_term
 
-def plot_omo(df_omo, start_date, end_date, show_legend=True):
+def plot_omo(df_omo, start_date, end_date, show_legend=True, legend_pos='right'):
     fig = go.Figure()
     has_data = False
     if not df_omo.empty:
@@ -114,9 +116,11 @@ def plot_omo(df_omo, start_date, end_date, show_legend=True):
             fig.add_trace(go.Scatter(x=df2['Ngày'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2), showlegend=show_legend))
             
     fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
+    if legend_pos == 'left':
+        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
     return fig, has_data
 
-def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", show_legend=True):
+def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", show_legend=True, legend_pos='right'):
     fig = go.Figure()
     vn_term_map = {
         '1 tháng': '1M', '3 tháng': '3M', '6 tháng': '6M', '9 tháng': '9M',
@@ -163,10 +167,12 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
                                           text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
 
     fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title)
+    if legend_pos == 'left':
+        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
 
-def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
+def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True, legend_pos='right'):
     fig = go.Figure()
     has_data = False
     df_out = pd.DataFrame()
@@ -190,6 +196,8 @@ def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
                     fig.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend))
                     
     fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
+    if legend_pos == 'left':
+        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)"))
     return fig, has_data, df_out
 
 
@@ -221,11 +229,11 @@ with tab_dash:
             c1_1, c1_2 = st.columns(2)
             with c1_1:
                 st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
-                f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=True)
+                f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=False)
                 if h1_c1: st.plotly_chart(f1_c1, use_container_width=True)
             with c1_2:
                 st_2, en_2 = safe_date_range("Khung thời gian 2", 'ib_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-                f1_c2, h1_c2, _ = plot_interbank(df_ib, st_2, en_2, show_legend=False)
+                f1_c2, h1_c2, _ = plot_interbank(df_ib, st_2, en_2, show_legend=True)
                 if h1_c2: st.plotly_chart(f1_c2, use_container_width=True)
 
         # Biểu đồ 2: OMO
@@ -242,11 +250,11 @@ with tab_dash:
             c2_1, c2_2 = st.columns(2)
             with c2_1:
                 st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
-                f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=True)
+                f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=False)
                 if h2_c1: st.plotly_chart(f2_c1, use_container_width=True)
             with c2_2:
                 st_22, en_22 = safe_date_range("Khung thời gian 2", 'omo_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-                f2_c2, h2_c2 = plot_omo(df_omo, st_22, en_22, show_legend=False)
+                f2_c2, h2_c2 = plot_omo(df_omo, st_22, en_22, show_legend=True)
                 if h2_c2: st.plotly_chart(f2_c2, use_container_width=True)
 
         # Biểu đồ 3: Yield Curve
@@ -265,12 +273,11 @@ with tab_dash:
             col_c1, col_c2 = st.columns(2)
             with col_c1:
                 date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today") - pd.Timedelta(days=30), key="yc1")
-                fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=True)
+                fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
                 if h1: st.plotly_chart(fig_c1, use_container_width=True)
             with col_c2:
                 date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today"), key="yc2")
-                # Ẩn chú thích (Legend) ở biểu đồ bên phải
-                fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=False)
+                fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
                 if h2: st.plotly_chart(fig_c2, use_container_width=True)
 
         # Biểu đồ 4: Exchange Rates
@@ -289,11 +296,11 @@ with tab_dash:
             c4_1, c4_2 = st.columns(2)
             with c4_1:
                 st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
-                f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=True)
+                f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=False)
                 if h4_c1: st.plotly_chart(f4_c1, use_container_width=True)
             with c4_2:
                 st_42, en_42 = safe_date_range("Khung thời gian 2", 'fx_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
-                f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, st_42, en_42, show_legend=False)
+                f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, st_42, en_42, show_legend=True)
                 if h4_c2: st.plotly_chart(f4_c2, use_container_width=True)
 
         # Bảng 5: FedWatch
