@@ -2,8 +2,8 @@ name: Send Daily Macro Report
 
 on:
   schedule:
-    # 8:00 AM giờ Việt Nam (UTC+7) tương đương với 1:00 AM UTC
-    - cron: '0 1 * * *'
+    # 4:00 AM giờ Việt Nam (UTC+7) tương đương với 9:00 PM (21:00) UTC hôm trước
+    - cron: '0 21 * * *'
   workflow_dispatch: # Nút nhấn chạy thủ công (Manual Trigger) trên GitHub
 
 jobs:
