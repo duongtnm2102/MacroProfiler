@@ -18,7 +18,7 @@ st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    .stDeployButton {display:none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -92,7 +92,8 @@ with tab_dash:
         if not df_ib.empty:
             df1 = df_ib.copy()
             df1['Date'] = safe_to_datetime(df1['Date'])
-            df1 = df1[(df1['Date'] >= '2025-01-01') & (df1['Term'] == 'ON')].sort_values('Date')
+            df1['Term_Clean'] = df1['Term'].astype(str).str.strip().str.upper()
+            df1 = df1[(df1['Date'] >= pd.to_datetime('2025-01-01')) & (df1['Term_Clean'] == 'ON')].sort_values('Date')
             if not df1.empty:
                 # Xử lý Volume nếu có dấu phẩy
                 df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
@@ -103,13 +104,15 @@ with tab_dash:
                 fig1.add_trace(go.Scatter(x=df1['Date'], y=df1['Rate'], name='ON Rate', mode='lines', line=dict(color='#00FF00', width=2)), secondary_y=True)
                 fig1.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
                 st.plotly_chart(fig1, use_container_width=True)
+            else:
+                st.info("Không có dữ liệu Interbank ON từ 01/01/2025.")
 
         # Biểu đồ 2: OMO Bơm ròng luỹ kế (>= 01/01/2025)
         st.markdown("#### 2. Cumulative Net OMO Injection")
         if not df_omo.empty:
             df2 = df_omo.copy()
             df2['Ngày'] = safe_to_datetime(df2['Ngày'])
-            df2 = df2[df2['Ngày'] >= '2025-01-01'].sort_values('Ngày')
+            df2 = df2[df2['Ngày'] >= pd.to_datetime('2025-01-01')].sort_values('Ngày')
             if not df2.empty:
                 df2['Giá trị bơm ròng'] = pd.to_numeric(df2['Giá trị bơm ròng'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
                 df2['Cumulative'] = df2['Giá trị bơm ròng'].cumsum()
@@ -123,14 +126,21 @@ with tab_dash:
         st.markdown("#### 3. Yield Curve (Latest)")
         fig3 = go.Figure()
         
+        # Mapping từ tiếng Việt sang tiếng Anh
+        vn_term_map = {
+            '1 tháng': '1M', '3 tháng': '3M', '6 tháng': '6M', '9 tháng': '9M',
+            '1 năm': '1Y', '2 năm': '2Y', '3 năm': '3Y', '5 năm': '5Y',
+            '7 năm': '7Y', '10 năm': '10Y', '15 năm': '15Y', '20 năm': '20Y', '30 năm': '30Y'
+        }
+        std_order = ['1M', '3M', '6M', '9M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y']
+        
         # US Yield Curve
         if not df_us_yc.empty:
             df3_us = df_us_yc.copy()
             df3_us['Date'] = safe_to_datetime(df3_us['Date'])
             if not df3_us.empty:
                 latest_us = df3_us.loc[df3_us['Date'].idxmax()]
-                terms_us = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y']
-                terms_us_avail = [t for t in terms_us if t in latest_us.index]
+                terms_us_avail = [t for t in std_order if t in latest_us.index]
                 rates_us = [pd.to_numeric(latest_us[t], errors='coerce') for t in terms_us_avail]
                 
                 fig3.add_trace(go.Scatter(x=terms_us_avail, y=rates_us, mode='lines+markers+text', name='US Yield Curve',
@@ -144,9 +154,10 @@ with tab_dash:
                 latest_date_vn = df3_vn['Date'].max()
                 latest_vn_df = df3_vn[df3_vn['Date'] == latest_date_vn].copy()
                 
-                terms_vn = latest_vn_df['Term'].tolist()
+                # Dịch thuật các kỳ hạn VN sang US format
+                terms_vn_raw = latest_vn_df['Term'].astype(str).str.strip().str.lower().tolist()
+                terms_vn_mapped = [vn_term_map.get(t, t.upper()) for t in terms_vn_raw]
                 
-                # Check for either Spot_Rate_Annual_Pct or Par_Yield_Pct
                 if 'Spot_Rate_Annual_Pct' in latest_vn_df.columns:
                     rates_vn = pd.to_numeric(latest_vn_df['Spot_Rate_Annual_Pct'].astype(str).str.replace(',', ''), errors='coerce').tolist()
                 elif 'Par_Yield_Pct' in latest_vn_df.columns:
@@ -155,20 +166,20 @@ with tab_dash:
                     rates_vn = []
                     
                 if rates_vn:
-                    fig3.add_trace(go.Scatter(x=terms_vn, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve',
+                    fig3.add_trace(go.Scatter(x=terms_vn_mapped, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve',
                                               text=[f"{r}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
             
         fig3.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
+        fig3.update_xaxes(categoryorder='array', categoryarray=std_order)
         st.plotly_chart(fig3, use_container_width=True)
 
-        # Biểu đồ 4: Tỷ giá (30 ngày gần nhất)
-        st.markdown("#### 4. Exchange Rates (Last 30 Days)")
+        # Biểu đồ 4: Tỷ giá (Từ 01/01/2025)
+        st.markdown("#### 4. Exchange Rates (Từ 01/01/2025)")
         if not df_fx.empty:
             df4 = df_fx.copy()
             df4['Date'] = safe_to_datetime(df4['Date'])
             if not df4.empty:
-                latest_fx = df4['Date'].max()
-                df4_30 = df4[df4['Date'] >= (latest_fx - pd.Timedelta(days=30))].sort_values('Date')
+                df4_30 = df4[df4['Date'] >= pd.to_datetime('2025-01-01')].sort_values('Date')
                 
                 for col in ['USD_VND_Rate', 'VCB_rate', 'Black_Market_rate']:
                     if col in df4_30.columns:
