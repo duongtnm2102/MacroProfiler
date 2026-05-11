@@ -30,6 +30,10 @@ st.markdown("""
             font-size: 2.5rem !important;
             white-space: nowrap;
         }
+        h4 {
+            font-size: 1.1rem !important;
+            white-space: nowrap;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
