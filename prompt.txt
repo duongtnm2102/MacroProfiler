@@ -110,11 +110,11 @@ SECTION 5: PHÂN TÍCH CHIẾN LƯỢC (STRATEGIC NARRATIVE)
 
 FedWatch Trajectory: Dựa trên bảng kết quả FedWatch, bắt buộc phải mô tả chi tiết "Cầu thang lãi suất" từ cuộc họp gần nhất đến cuộc họp xa nhất. Phân tích xu hướng của Fed trong 02 năm tiếp theo dựa vào bảng kết quả FedWatch.
 
-Chính trị Mỹ: Mâu thuẫn Nhà Trắng vs Fed (Nếu có, cần thu thập các phát ngôn của tổng thống Mỹ, Nhà Trắng, Bộ Tài Chính đối với Fed để kiểm tra mâu thuẫn).
+Chính trị Mỹ: Mâu thuẫn Nhà Trắng vs Fed (Nếu có, cần thu thập các phát ngôn của tổng thống Mỹ, Nhà Trắng, Bộ Tài Chính đối với Fed để kiểm tra mâu thuẫn). Nếu không có, hãy tìm kiếm về các phát ngôn của tổng thống Mỹ về kinh tế, chính trị, chiến tranh (có ảnh hưởng đến kinh tế) cũng như phát ngôn của Nhà Trắng, Fed, Bộ Tài chính về vấn đề mà tổng thống đề cập hoặc tất cả các vấn đề có ảnh hưởng đến kinh tế.
 
 2. GIẢI MÃ VIỆT NAM: "MỆNH LỆNH & THỰC TẾ"
 
-Mệnh lệnh Chính trị: Trích dẫn chỉ đạo về kinh tế, tài chính ngân hàng, tín dụng.
+Mệnh lệnh Chính trị: Trích dẫn chỉ đạo về kinh tế, tài chính ngân hàng, tín dụng, dự thảo, phát ngôn của Thủ tướng, Chủ tịch, Tổng bí thư, Thống đốc Ngân hàng Nhà nước, Bộ trưởng về kinh tế, tài chính, kinh tế xã hội, kinh tế thế giới ảnh hưởng kinh tế trong nước, các vấn đề về kinh tế, chính trị, chiến tranh ảnh hưởng đến kinh tế thế giới nói chung và Việt Nam nói riêng.
 
 Thực tế: Tìm số liệu thấp nhất, cao nhất của 30 ngày dữ liệu gần nhất của: lãi suất interbank qua đêm, khối lượng giao dịch interbank qua đêm, giá trị bơm ròng OMO, lãi suất trúng thầu OMO, yield curve kỳ hạn 3M, yield curve kỳ hạn 20Y, tỷ giá trung tâm. Sau đó phân tích biến động dữ liệu sau thu thập. 
 
