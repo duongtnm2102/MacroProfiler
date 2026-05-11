@@ -6,3 +6,4 @@ requests
 markdown
 duckduckgo-search
 google-genai
+plotly
