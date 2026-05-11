@@ -40,6 +40,17 @@ if "data_dict" not in st.session_state:
 def safe_to_datetime(series):
     return pd.to_datetime(series, dayfirst=True, errors='coerce')
 
+def safe_date_range(label, key_prefix, default_start, default_end):
+    res = st.date_input(label, value=(default_start, default_end), key=key_prefix)
+    if isinstance(res, tuple):
+        if len(res) == 2:
+            return pd.to_datetime(res[0]), pd.to_datetime(res[1])
+        elif len(res) == 1:
+            return pd.to_datetime(res[0]), pd.to_datetime(res[0])
+    elif res is not None:
+        return pd.to_datetime(res), pd.to_datetime(res)
+    return pd.to_datetime(default_start), pd.to_datetime(default_end)
+
 def execute_python_code(code: str, data_dict: dict):
     match = re.search(r"```python\n(.*?)\n```", code, re.DOTALL)
     script = match.group(1) if match else code
@@ -62,11 +73,50 @@ def execute_python_code(code: str, data_dict: dict):
         error_msg = f"Lỗi thực thi code: {str(e)}"
     finally:
         sys.stdout = old_stdout
-        
-    output = redirected_output.getvalue()
-    return output, error_msg
+    return redirected_output.getvalue(), error_msg
 
-def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve"):
+
+def plot_interbank(df_ib, start_date, end_date, show_legend=True):
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    has_data = False
+    target_term = 'ON'
+    
+    if not df_ib.empty:
+        df1 = df_ib.copy()
+        df1['Date'] = safe_to_datetime(df1['Date'])
+        df1['Term_Clean'] = df1['Term'].astype(str).str.strip().str.upper()
+        on_terms = [t for t in df1['Term_Clean'].unique() if t in ['ON', 'O/N', 'QUA ĐÊM', 'QUA DEM', 'OVERNIGHT']]
+        target_term = on_terms[0] if on_terms else 'ON'
+        
+        df1 = df1[(df1['Date'] >= start_date) & (df1['Date'] <= end_date) & (df1['Term_Clean'] == target_term)].sort_values('Date')
+        if not df1.empty:
+            has_data = True
+            df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+            df1['Rate'] = pd.to_numeric(df1['Rate'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+            
+            fig.add_trace(go.Bar(x=df1['Date'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)', showlegend=show_legend), secondary_y=False)
+            fig.add_trace(go.Scatter(x=df1['Date'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2), showlegend=show_legend), secondary_y=True)
+            
+    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
+    return fig, has_data, target_term
+
+def plot_omo(df_omo, start_date, end_date, show_legend=True):
+    fig = go.Figure()
+    has_data = False
+    if not df_omo.empty:
+        df2 = df_omo.copy()
+        df2['Ngày'] = safe_to_datetime(df2['Ngày'])
+        df2 = df2[(df2['Ngày'] >= start_date) & (df2['Ngày'] <= end_date)].sort_values('Ngày')
+        if not df2.empty:
+            has_data = True
+            df2['Giá trị bơm ròng'] = pd.to_numeric(df2['Giá trị bơm ròng'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+            df2['Cumulative'] = df2['Giá trị bơm ròng'].cumsum()
+            fig.add_trace(go.Scatter(x=df2['Ngày'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2), showlegend=show_legend))
+            
+    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
+    return fig, has_data
+
+def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", show_legend=True):
     fig = go.Figure()
     vn_term_map = {
         '1 tháng': '1M', '3 tháng': '3M', '6 tháng': '6M', '9 tháng': '9M',
@@ -74,7 +124,6 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve"):
         '7 năm': '7Y', '10 năm': '10Y', '15 năm': '15Y', '20 năm': '20Y', '30 năm': '30Y'
     }
     std_order = ['1M', '3M', '6M', '9M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y']
-    
     has_data = False
 
     if not df_us_yc.empty:
@@ -87,7 +136,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve"):
             latest_us = df3_us.loc[df3_us['Date'].idxmax()]
             terms_us_avail = [t for t in std_order if t in latest_us.index]
             rates_us = [pd.to_numeric(latest_us[t], errors='coerce') for t in terms_us_avail]
-            fig.add_trace(go.Scatter(x=terms_us_avail, y=rates_us, mode='lines+markers+text', name='US Yield Curve',
+            fig.add_trace(go.Scatter(x=terms_us_avail, y=rates_us, mode='lines+markers+text', name='US Yield Curve', showlegend=show_legend,
                                       text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_us], textposition="top center", line=dict(color='#00FFFF')))
 
     if not df_vn_yc.empty:
@@ -110,17 +159,43 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve"):
                 rates_vn = []
                 
             if rates_vn:
-                fig.add_trace(go.Scatter(x=terms_vn_mapped, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve',
+                fig.add_trace(go.Scatter(x=terms_vn_mapped, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve', showlegend=show_legend,
                                           text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
 
     fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title)
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
 
+def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
+    fig = go.Figure()
+    has_data = False
+    df_out = pd.DataFrame()
+    if not df_fx.empty:
+        df4 = df_fx.copy()
+        df4['Date'] = safe_to_datetime(df4['Date'])
+        if not df4.empty:
+            df4_filter = df4[(df4['Date'] >= start_date) & (df4['Date'] <= end_date)].sort_values('Date')
+            if not df4_filter.empty:
+                has_data = True
+                df_out = df4_filter.copy()
+                for col in ['USD_VND_Rate', 'VCB_rate', 'Black_Market_rate']:
+                    if col in df4_filter.columns:
+                        df4_filter[col] = pd.to_numeric(df4_filter[col].astype(str).str.replace(',', ''), errors='coerce')
+                
+                if 'USD_VND_Rate' in df4_filter.columns:
+                    fig.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend))
+                if 'VCB_rate' in df4_filter.columns:
+                    fig.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend))
+                if 'Black_Market_rate' in df4_filter.columns:
+                    fig.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend))
+                    
+    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
+    return fig, has_data, df_out
+
+
 tab_dash, tab_chat = st.tabs(["📺 DASHBOARD MẶC ĐỊNH", "💬 AI VĨ MÔ"])
 
 with tab_dash:
-    st.markdown("### 📊 MARKET DATA TERMINAL")
     data_dict = st.session_state.data_dict
     if not data_dict:
         st.warning("Đang tải dữ liệu...")
@@ -131,62 +206,56 @@ with tab_dash:
         df_vn_yc = data_dict.get('SBV_Yield_Curve', pd.DataFrame())
         df_fx = data_dict.get('SBV_Exchange_Rate', pd.DataFrame())
         df_fed = data_dict.get('FedWatch_Probabilities', pd.DataFrame())
-        
-        st.markdown("---")
-        st.markdown("#### 📅 Lọc Thời Gian Chung (Biểu đồ 1, 2, 4)")
-        col_st, col_en = st.columns(2)
-        with col_st:
-            global_start = st.date_input("Từ ngày", pd.to_datetime("2025-01-01"))
-        with col_en:
-            global_end = st.date_input("Đến ngày", pd.to_datetime("today"))
-        
-        global_start = pd.to_datetime(global_start)
-        global_end = pd.to_datetime(global_end)
 
         # Biểu đồ 1: Interbank ON
+        st.markdown("---")
         st.markdown("#### 1. Interbank ON Rate & Volume")
-        if not df_ib.empty:
-            df1 = df_ib.copy()
-            df1['Date'] = safe_to_datetime(df1['Date'])
-            df1['Term_Clean'] = df1['Term'].astype(str).str.strip().str.upper()
+        t1_single, t1_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
+        with t1_single:
+            d1_st, d1_en = safe_date_range("Chọn khoảng thời gian", 'ib_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+            f1, h1, term1 = plot_interbank(df_ib, d1_st, d1_en, show_legend=True)
+            if h1: st.plotly_chart(f1, use_container_width=True)
+            else: st.info("Không có dữ liệu.")
             
-            on_terms = [t for t in df1['Term_Clean'].unique() if t in ['ON', 'O/N', 'QUA ĐÊM', 'QUA DEM', 'OVERNIGHT']]
-            target_term = on_terms[0] if on_terms else 'ON'
-            
-            df1 = df1[(df1['Date'] >= global_start) & (df1['Date'] <= global_end) & (df1['Term_Clean'] == target_term)].sort_values('Date')
-            if not df1.empty:
-                df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
-                df1['Rate'] = pd.to_numeric(df1['Rate'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
-                
-                fig1 = make_subplots(specs=[[{"secondary_y": True}]])
-                fig1.add_trace(go.Bar(x=df1['Date'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)'), secondary_y=False)
-                fig1.add_trace(go.Scatter(x=df1['Date'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2)), secondary_y=True)
-                fig1.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
-                st.plotly_chart(fig1, use_container_width=True)
-            else:
-                st.info(f"Không có dữ liệu Interbank kỳ hạn '{target_term}' trong khoảng thời gian này. Các kỳ hạn trong data: {', '.join(df_ib['Term'].unique()[:10])}")
+        with t1_compare:
+            c1_1, c1_2 = st.columns(2)
+            with c1_1:
+                st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=True)
+                if h1_c1: st.plotly_chart(f1_c1, use_container_width=True)
+            with c1_2:
+                st_2, en_2 = safe_date_range("Khung thời gian 2", 'ib_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                f1_c2, h1_c2, _ = plot_interbank(df_ib, st_2, en_2, show_legend=False)
+                if h1_c2: st.plotly_chart(f1_c2, use_container_width=True)
 
         # Biểu đồ 2: OMO
+        st.markdown("---")
         st.markdown("#### 2. Cumulative Net OMO Injection")
-        if not df_omo.empty:
-            df2 = df_omo.copy()
-            df2['Ngày'] = safe_to_datetime(df2['Ngày'])
-            df2 = df2[(df2['Ngày'] >= global_start) & (df2['Ngày'] <= global_end)].sort_values('Ngày')
-            if not df2.empty:
-                df2['Giá trị bơm ròng'] = pd.to_numeric(df2['Giá trị bơm ròng'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
-                df2['Cumulative'] = df2['Giá trị bơm ròng'].cumsum()
-                
-                fig2 = go.Figure()
-                fig2.add_trace(go.Scatter(x=df2['Ngày'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2)))
-                fig2.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
-                st.plotly_chart(fig2, use_container_width=True)
+        t2_single, t2_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
+        with t2_single:
+            d2_st, d2_en = safe_date_range("Chọn khoảng thời gian", 'omo_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+            f2, h2 = plot_omo(df_omo, d2_st, d2_en, show_legend=True)
+            if h2: st.plotly_chart(f2, use_container_width=True)
+            else: st.info("Không có dữ liệu.")
+            
+        with t2_compare:
+            c2_1, c2_2 = st.columns(2)
+            with c2_1:
+                st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=True)
+                if h2_c1: st.plotly_chart(f2_c1, use_container_width=True)
+            with c2_2:
+                st_22, en_22 = safe_date_range("Khung thời gian 2", 'omo_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                f2_c2, h2_c2 = plot_omo(df_omo, st_22, en_22, show_legend=False)
+                if h2_c2: st.plotly_chart(f2_c2, use_container_width=True)
 
         # Biểu đồ 3: Yield Curve
+        st.markdown("---")
         st.markdown("#### 3. Yield Curve")
         tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
         
         with tab_latest:
-            fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="")
+            fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
             if has_data3:
                 st.plotly_chart(fig3, use_container_width=True)
             else:
@@ -196,39 +265,39 @@ with tab_dash:
             col_c1, col_c2 = st.columns(2)
             with col_c1:
                 date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today") - pd.Timedelta(days=30), key="yc1")
-                fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}")
+                fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=True)
                 if h1: st.plotly_chart(fig_c1, use_container_width=True)
             with col_c2:
                 date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today"), key="yc2")
-                fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}")
+                # Ẩn chú thích (Legend) ở biểu đồ bên phải
+                fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=False)
                 if h2: st.plotly_chart(fig_c2, use_container_width=True)
 
         # Biểu đồ 4: Exchange Rates
+        st.markdown("---")
         st.markdown("#### 4. Exchange Rates")
-        if not df_fx.empty:
-            df4 = df_fx.copy()
-            df4['Date'] = safe_to_datetime(df4['Date'])
-            if not df4.empty:
-                df4_filter = df4[(df4['Date'] >= global_start) & (df4['Date'] <= global_end)].sort_values('Date')
-                
-                for col in ['USD_VND_Rate', 'VCB_rate', 'Black_Market_rate']:
-                    if col in df4_filter.columns:
-                        df4_filter[col] = pd.to_numeric(df4_filter[col].astype(str).str.replace(',', ''), errors='coerce')
-                
-                fig4 = go.Figure()
-                if 'USD_VND_Rate' in df4_filter.columns:
-                    fig4.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white')))
-                if 'VCB_rate' in df4_filter.columns:
-                    fig4.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime')))
-                if 'Black_Market_rate' in df4_filter.columns:
-                    fig4.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red')))
-                    
-                fig4.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
-                st.plotly_chart(fig4, use_container_width=True)
-                
-                st.dataframe(df4_filter.sort_values('Date', ascending=False), use_container_width=True)
+        t4_single, t4_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
+        with t4_single:
+            d4_st, d4_en = safe_date_range("Chọn khoảng thời gian", 'fx_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+            f4, h4, df_out4 = plot_exchange_rate(df_fx, d4_st, d4_en, show_legend=True)
+            if h4: 
+                st.plotly_chart(f4, use_container_width=True)
+                st.dataframe(df_out4.sort_values('Date', ascending=False), use_container_width=True)
+            else: st.info("Không có dữ liệu.")
+            
+        with t4_compare:
+            c4_1, c4_2 = st.columns(2)
+            with c4_1:
+                st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=True)
+                if h4_c1: st.plotly_chart(f4_c1, use_container_width=True)
+            with c4_2:
+                st_42, en_42 = safe_date_range("Khung thời gian 2", 'fx_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, st_42, en_42, show_legend=False)
+                if h4_c2: st.plotly_chart(f4_c2, use_container_width=True)
 
         # Bảng 5: FedWatch
+        st.markdown("---")
         st.markdown("#### 5. FedWatch Probabilities")
         if not df_fed.empty:
             def highlight_prob(val):
