@@ -97,21 +97,13 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
         if not df1.empty:
             has_data = True
             # Ép kiểu dữ liệu
-            df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce')
-            df1['Rate'] = pd.to_numeric(df1['Rate'].astype(str).str.replace(',', ''), errors='coerce')
+            df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+            df1['Rate'] = pd.to_numeric(df1['Rate'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
             
-            # --- LẤP GAP (FILL MISSING DATA) ---
-            # Drop duplicate dates nếu có
-            df1 = df1.drop_duplicates(subset=['Date'], keep='last').set_index('Date')
-            # Tạo một dải thời gian liên tục từng ngày một (freq='D')
-            full_idx = pd.date_range(start=df1.index.min(), end=df1.index.max(), freq='D')
-            df1 = df1.reindex(full_idx)
+            # --- LOẠI BỎ CÁC NGÀY KHÔNG CÓ DỮ LIỆU ---
+            # Xóa các dòng có Volume = 0 hoặc Rate = 0 để loại bỏ hoàn toàn các khoảng trống
+            df1 = df1[(df1['Volume'] > 0) & (df1['Rate'] > 0)]
             
-            # Điền dữ liệu cho các ngày bị trống (Lễ, cuối tuần, thiếu data) bằng dữ liệu của ngày gần nhất trước đó
-            df1['Volume'] = df1['Volume'].ffill().fillna(0)
-            df1['Rate'] = df1['Rate'].ffill().fillna(0)
-            
-            df1 = df1.reset_index().rename(columns={'index': 'Date'})
             df1['Date_Str'] = df1['Date'].dt.strftime('%d/%m/%Y')
             
             fig.add_trace(go.Bar(x=df1['Date_Str'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)', showlegend=show_legend), secondary_y=False)
