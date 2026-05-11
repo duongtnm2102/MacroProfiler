@@ -25,6 +25,12 @@ st.markdown("""
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
     }
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 2.5rem !important;
+            white-space: nowrap;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
