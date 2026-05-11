@@ -11,7 +11,7 @@ from email_utils import send_daily_report
 from agents import generate_strategic_report, data_analyst_agent
 from data_processor import process_macro_data
 
-st.set_page_config(page_title="Macro-Profiler AI", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Macro Watch", page_icon="📈", layout="wide")
 
 # CSS Phong cách Bloomberg
 st.markdown("""
@@ -22,13 +22,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📈 Longitudinal Strategic Macro-Profiler")
+st.title("📈 Macro Watch")
 
-# Khởi tạo session state cho chat
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Nút tải dữ liệu ở sidebar
 with st.sidebar:
     st.header("Cài đặt Dữ liệu")
     if st.button("Làm mới Dữ liệu (Reload CSV)"):
@@ -39,11 +37,9 @@ with st.sidebar:
 if "data_dict" not in st.session_state:
     st.session_state.data_dict = get_all_data()
 
-# Hàm tiền xử lý ngày tháng an toàn
 def safe_to_datetime(series):
     return pd.to_datetime(series, dayfirst=True, errors='coerce')
 
-# Hàm trích xuất và chạy Python code (dành cho Tab Chat)
 def execute_python_code(code: str, data_dict: dict):
     match = re.search(r"```python\n(.*?)\n```", code, re.DOTALL)
     script = match.group(1) if match else code
@@ -70,8 +66,57 @@ def execute_python_code(code: str, data_dict: dict):
     output = redirected_output.getvalue()
     return output, error_msg
 
+def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve"):
+    fig = go.Figure()
+    vn_term_map = {
+        '1 tháng': '1M', '3 tháng': '3M', '6 tháng': '6M', '9 tháng': '9M',
+        '1 năm': '1Y', '2 năm': '2Y', '3 năm': '3Y', '5 năm': '5Y',
+        '7 năm': '7Y', '10 năm': '10Y', '15 năm': '15Y', '20 năm': '20Y', '30 năm': '30Y'
+    }
+    std_order = ['1M', '3M', '6M', '9M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y']
+    
+    has_data = False
 
-# CHIA TABS
+    if not df_us_yc.empty:
+        df3_us = df_us_yc.copy()
+        df3_us['Date'] = safe_to_datetime(df3_us['Date'])
+        if target_date:
+            df3_us = df3_us[df3_us['Date'] <= target_date]
+        if not df3_us.empty:
+            has_data = True
+            latest_us = df3_us.loc[df3_us['Date'].idxmax()]
+            terms_us_avail = [t for t in std_order if t in latest_us.index]
+            rates_us = [pd.to_numeric(latest_us[t], errors='coerce') for t in terms_us_avail]
+            fig.add_trace(go.Scatter(x=terms_us_avail, y=rates_us, mode='lines+markers+text', name='US Yield Curve',
+                                      text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_us], textposition="top center", line=dict(color='#00FFFF')))
+
+    if not df_vn_yc.empty:
+        df3_vn = df_vn_yc.copy()
+        df3_vn['Date'] = safe_to_datetime(df3_vn['Date'])
+        if target_date:
+            df3_vn = df3_vn[df3_vn['Date'] <= target_date]
+        if not df3_vn.empty:
+            has_data = True
+            latest_date_vn = df3_vn['Date'].max()
+            latest_vn_df = df3_vn[df3_vn['Date'] == latest_date_vn].copy()
+            terms_vn_raw = latest_vn_df['Term'].astype(str).str.strip().str.lower().tolist()
+            terms_vn_mapped = [vn_term_map.get(t, t.upper()) for t in terms_vn_raw]
+            
+            if 'Spot_Rate_Annual_Pct' in latest_vn_df.columns:
+                rates_vn = pd.to_numeric(latest_vn_df['Spot_Rate_Annual_Pct'].astype(str).str.replace(',', ''), errors='coerce').tolist()
+            elif 'Par_Yield_Pct' in latest_vn_df.columns:
+                rates_vn = pd.to_numeric(latest_vn_df['Par_Yield_Pct'].astype(str).str.replace(',', ''), errors='coerce').tolist()
+            else:
+                rates_vn = []
+                
+            if rates_vn:
+                fig.add_trace(go.Scatter(x=terms_vn_mapped, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve',
+                                          text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
+
+    fig.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title)
+    fig.update_xaxes(categoryorder='array', categoryarray=std_order)
+    return fig, has_data
+
 tab_dash, tab_chat = st.tabs(["📺 DASHBOARD MẶC ĐỊNH", "💬 AI VĨ MÔ"])
 
 with tab_dash:
@@ -87,122 +132,101 @@ with tab_dash:
         df_fx = data_dict.get('SBV_Exchange_Rate', pd.DataFrame())
         df_fed = data_dict.get('FedWatch_Probabilities', pd.DataFrame())
         
-        # Biểu đồ 1: Interbank ON Rate + Volume (>= 01/01/2025)
+        st.markdown("---")
+        st.markdown("#### 📅 Lọc Thời Gian Chung (Biểu đồ 1, 2, 4)")
+        col_st, col_en = st.columns(2)
+        with col_st:
+            global_start = st.date_input("Từ ngày", pd.to_datetime("2025-01-01"))
+        with col_en:
+            global_end = st.date_input("Đến ngày", pd.to_datetime("today"))
+        
+        global_start = pd.to_datetime(global_start)
+        global_end = pd.to_datetime(global_end)
+
+        # Biểu đồ 1: Interbank ON
         st.markdown("#### 1. Interbank ON Rate & Volume")
         if not df_ib.empty:
             df1 = df_ib.copy()
             df1['Date'] = safe_to_datetime(df1['Date'])
             df1['Term_Clean'] = df1['Term'].astype(str).str.strip().str.upper()
             
-            # Tự động tìm kỳ hạn qua đêm (có thể là ON, O/N, QUA DEM)
             on_terms = [t for t in df1['Term_Clean'].unique() if t in ['ON', 'O/N', 'QUA ĐÊM', 'QUA DEM', 'OVERNIGHT']]
             target_term = on_terms[0] if on_terms else 'ON'
             
-            df1 = df1[(df1['Date'] >= pd.to_datetime('2025-01-01')) & (df1['Term_Clean'] == target_term)].sort_values('Date')
+            df1 = df1[(df1['Date'] >= global_start) & (df1['Date'] <= global_end) & (df1['Term_Clean'] == target_term)].sort_values('Date')
             if not df1.empty:
-                # Xử lý Volume nếu có dấu phẩy
                 df1['Volume'] = pd.to_numeric(df1['Volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
                 df1['Rate'] = pd.to_numeric(df1['Rate'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
                 
                 fig1 = make_subplots(specs=[[{"secondary_y": True}]])
                 fig1.add_trace(go.Bar(x=df1['Date'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)'), secondary_y=False)
-                fig1.add_trace(go.Scatter(x=df1['Date'], y=df1['Rate'], name='ON Rate', mode='lines', line=dict(color='#00FF00', width=2)), secondary_y=True)
+                fig1.add_trace(go.Scatter(x=df1['Date'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2)), secondary_y=True)
                 fig1.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
                 st.plotly_chart(fig1, use_container_width=True)
             else:
-                st.info(f"Không có dữ liệu Interbank kỳ hạn '{target_term}' từ 01/01/2025. Các kỳ hạn trong data: {', '.join(df_ib['Term'].unique()[:10])}")
+                st.info(f"Không có dữ liệu Interbank kỳ hạn '{target_term}' trong khoảng thời gian này. Các kỳ hạn trong data: {', '.join(df_ib['Term'].unique()[:10])}")
 
-        # Biểu đồ 2: OMO Bơm ròng luỹ kế (>= 01/01/2025)
+        # Biểu đồ 2: OMO
         st.markdown("#### 2. Cumulative Net OMO Injection")
         if not df_omo.empty:
             df2 = df_omo.copy()
             df2['Ngày'] = safe_to_datetime(df2['Ngày'])
-            df2 = df2[df2['Ngày'] >= pd.to_datetime('2025-01-01')].sort_values('Ngày')
+            df2 = df2[(df2['Ngày'] >= global_start) & (df2['Ngày'] <= global_end)].sort_values('Ngày')
             if not df2.empty:
                 df2['Giá trị bơm ròng'] = pd.to_numeric(df2['Giá trị bơm ròng'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
                 df2['Cumulative'] = df2['Giá trị bơm ròng'].cumsum()
                 
                 fig2 = go.Figure()
-                fig2.add_trace(go.Scatter(x=df2['Ngày'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', line=dict(color='#FF00FF', width=2)))
+                fig2.add_trace(go.Scatter(x=df2['Ngày'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2)))
                 fig2.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
                 st.plotly_chart(fig2, use_container_width=True)
 
-        # Biểu đồ 3: Yield Curve (VN & US mới nhất)
-        st.markdown("#### 3. Yield Curve (Latest)")
-        fig3 = go.Figure()
+        # Biểu đồ 3: Yield Curve
+        st.markdown("#### 3. Yield Curve")
+        tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
         
-        # Mapping từ tiếng Việt sang tiếng Anh
-        vn_term_map = {
-            '1 tháng': '1M', '3 tháng': '3M', '6 tháng': '6M', '9 tháng': '9M',
-            '1 năm': '1Y', '2 năm': '2Y', '3 năm': '3Y', '5 năm': '5Y',
-            '7 năm': '7Y', '10 năm': '10Y', '15 năm': '15Y', '20 năm': '20Y', '30 năm': '30Y'
-        }
-        std_order = ['1M', '3M', '6M', '9M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y']
-        
-        # US Yield Curve
-        if not df_us_yc.empty:
-            df3_us = df_us_yc.copy()
-            df3_us['Date'] = safe_to_datetime(df3_us['Date'])
-            if not df3_us.empty:
-                latest_us = df3_us.loc[df3_us['Date'].idxmax()]
-                terms_us_avail = [t for t in std_order if t in latest_us.index]
-                rates_us = [pd.to_numeric(latest_us[t], errors='coerce') for t in terms_us_avail]
+        with tab_latest:
+            fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="")
+            if has_data3:
+                st.plotly_chart(fig3, use_container_width=True)
+            else:
+                st.info("Không có dữ liệu Yield Curve.")
                 
-                fig3.add_trace(go.Scatter(x=terms_us_avail, y=rates_us, mode='lines+markers+text', name='US Yield Curve',
-                                          text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_us], textposition="top center", line=dict(color='#00FFFF')))
-                                          
-        # VN Yield Curve
-        if not df_vn_yc.empty:
-            df3_vn = df_vn_yc.copy()
-            df3_vn['Date'] = safe_to_datetime(df3_vn['Date'])
-            if not df3_vn.empty:
-                latest_date_vn = df3_vn['Date'].max()
-                latest_vn_df = df3_vn[df3_vn['Date'] == latest_date_vn].copy()
-                
-                # Dịch thuật các kỳ hạn VN sang US format
-                terms_vn_raw = latest_vn_df['Term'].astype(str).str.strip().str.lower().tolist()
-                terms_vn_mapped = [vn_term_map.get(t, t.upper()) for t in terms_vn_raw]
-                
-                if 'Spot_Rate_Annual_Pct' in latest_vn_df.columns:
-                    rates_vn = pd.to_numeric(latest_vn_df['Spot_Rate_Annual_Pct'].astype(str).str.replace(',', ''), errors='coerce').tolist()
-                elif 'Par_Yield_Pct' in latest_vn_df.columns:
-                    rates_vn = pd.to_numeric(latest_vn_df['Par_Yield_Pct'].astype(str).str.replace(',', ''), errors='coerce').tolist()
-                else:
-                    rates_vn = []
-                    
-                if rates_vn:
-                    fig3.add_trace(go.Scatter(x=terms_vn_mapped, y=rates_vn, mode='lines+markers+text', name='VN Yield Curve',
-                                              text=[f"{r:.2f}%" if pd.notnull(r) else "" for r in rates_vn], textposition="bottom center", line=dict(color='#FFFF00')))
-            
-        fig3.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
-        fig3.update_xaxes(categoryorder='array', categoryarray=std_order)
-        st.plotly_chart(fig3, use_container_width=True)
+        with tab_compare:
+            col_c1, col_c2 = st.columns(2)
+            with col_c1:
+                date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today") - pd.Timedelta(days=30), key="yc1")
+                fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}")
+                if h1: st.plotly_chart(fig_c1, use_container_width=True)
+            with col_c2:
+                date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today"), key="yc2")
+                fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}")
+                if h2: st.plotly_chart(fig_c2, use_container_width=True)
 
-        # Biểu đồ 4: Tỷ giá (Từ 01/01/2025)
-        st.markdown("#### 4. Exchange Rates (Từ 01/01/2025)")
+        # Biểu đồ 4: Exchange Rates
+        st.markdown("#### 4. Exchange Rates")
         if not df_fx.empty:
             df4 = df_fx.copy()
             df4['Date'] = safe_to_datetime(df4['Date'])
             if not df4.empty:
-                df4_30 = df4[df4['Date'] >= pd.to_datetime('2025-01-01')].sort_values('Date')
+                df4_filter = df4[(df4['Date'] >= global_start) & (df4['Date'] <= global_end)].sort_values('Date')
                 
                 for col in ['USD_VND_Rate', 'VCB_rate', 'Black_Market_rate']:
-                    if col in df4_30.columns:
-                        df4_30[col] = pd.to_numeric(df4_30[col].astype(str).str.replace(',', ''), errors='coerce')
+                    if col in df4_filter.columns:
+                        df4_filter[col] = pd.to_numeric(df4_filter[col].astype(str).str.replace(',', ''), errors='coerce')
                 
                 fig4 = go.Figure()
-                if 'USD_VND_Rate' in df4_30.columns:
-                    fig4.add_trace(go.Scatter(x=df4_30['Date'], y=df4_30['USD_VND_Rate'], mode='lines', name='Central Rate', line=dict(color='white')))
-                if 'VCB_rate' in df4_30.columns:
-                    fig4.add_trace(go.Scatter(x=df4_30['Date'], y=df4_30['VCB_rate'], mode='lines', name='VCB Rate', line=dict(color='lime')))
-                if 'Black_Market_rate' in df4_30.columns:
-                    fig4.add_trace(go.Scatter(x=df4_30['Date'], y=df4_30['Black_Market_rate'], mode='lines', name='Black Market', line=dict(color='red')))
+                if 'USD_VND_Rate' in df4_filter.columns:
+                    fig4.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white')))
+                if 'VCB_rate' in df4_filter.columns:
+                    fig4.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime')))
+                if 'Black_Market_rate' in df4_filter.columns:
+                    fig4.add_trace(go.Scatter(x=df4_filter['Date'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red')))
                     
                 fig4.update_layout(template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0))
                 st.plotly_chart(fig4, use_container_width=True)
                 
-                # Hiển thị bảng số liệu
-                st.dataframe(df4_30.sort_values('Date', ascending=False), use_container_width=True)
+                st.dataframe(df4_filter.sort_values('Date', ascending=False), use_container_width=True)
 
         # Bảng 5: FedWatch
         st.markdown("#### 5. FedWatch Probabilities")
@@ -211,31 +235,24 @@ with tab_dash:
                 try:
                     v = float(str(val).replace('%', '').strip())
                     if v == 0: 
-                        return 'color: #333333;' # Đen mờ cho xác suất 0%
-                    
-                    # Tạo hiệu ứng xanh lá đậm dần theo tỷ lệ phần trăm
+                        return 'color: #333333;'
                     alpha = max(0.2, v / 100)
                     return f'background-color: rgba(0, 255, 0, {alpha}); color: white;'
                 except:
                     return ''
                     
             try:
-                # Dùng applymap (hoặc map ở pandas đời mới) để tô màu
                 styled_fed = df_fed.style.applymap(highlight_prob, subset=df_fed.columns[1:])
                 st.dataframe(styled_fed, use_container_width=True)
             except AttributeError:
-                # Fallback nếu dùng pandas >= 2.1 (applymap bị đổi thành map)
                 styled_fed = df_fed.style.map(highlight_prob, subset=df_fed.columns[1:])
                 st.dataframe(styled_fed, use_container_width=True)
 
-
 with tab_chat:
-    # Hiển thị lịch sử chat
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Xử lý input từ user
     if prompt := st.chat_input("Nhập lệnh (VD: Cập nhật, Thống kê tỷ giá OMO...)"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
