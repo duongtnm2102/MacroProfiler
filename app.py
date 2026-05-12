@@ -12,7 +12,7 @@ from agents import generate_strategic_report, data_analyst_agent
 from data_processor import process_macro_data
 from streamlit_javascript import st_javascript
 
-st.set_page_config(page_title="Macro Watch", page_icon="📈", layout="wide")
+st.set_page_config(page_title="VN McWatch", page_icon="🇻🇳", layout="wide")
 
 # CSS Phong cách Bloomberg & Tối ưu khoảng trống
 st.markdown("""
@@ -35,10 +35,26 @@ st.markdown("""
             white-space: nowrap;
         }
     }
+    /* Loại bỏ khoảng trống thừa giữa tab và nội dung */
+    div[data-testid="stTabs"] > div[data-baseweb="tab-list"] {
+        margin-bottom: 0rem;
+    }
+    div[data-testid="stTabs"] > div[data-baseweb="tab-panel"] > div {
+        padding-top: 0rem !important;
+    }
+    h4 {
+        margin-top: 0rem !important;
+        padding-top: 0rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📈 Macro Watch")
+st.markdown("""
+<h1 style='display: flex; align-items: center;'>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/21/Flag_of_Vietnam.svg" width="55" style="margin-right: 15px; border-radius: 4px; box-shadow: 0px 0px 5px rgba(255,255,255,0.2);" /> 
+    VN McWatch
+</h1>
+""", unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -56,8 +72,8 @@ if "data_dict" not in st.session_state:
 def safe_to_datetime(series):
     return pd.to_datetime(series, dayfirst=True, errors='coerce')
 
-def safe_date_range(label, key_prefix, default_start, default_end):
-    res = st.date_input(label, value=(default_start, default_end), key=key_prefix)
+def safe_date_range(label, key_prefix, default_start, default_end, min_date=None):
+    res = st.date_input(label, value=(default_start, default_end), min_value=min_date, key=key_prefix)
     if isinstance(res, tuple):
         if len(res) == 2:
             return pd.to_datetime(res[0]), pd.to_datetime(res[1])
@@ -316,7 +332,7 @@ with tab_dash:
             st.markdown("#### 1. Interbank ON Rate & Volume")
             t1_single, t1_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
             with t1_single:
-                d1_st, d1_en = safe_date_range("Chọn khoảng thời gian", 'ib_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                d1_st, d1_en = safe_date_range("Chọn khoảng thời gian", 'ib_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"), min_date=pd.to_datetime("2004-07-12"))
                 f1, h1, term1 = plot_interbank(df_ib, d1_st, d1_en, show_legend=True)
                 if h1: st.plotly_chart(f1, use_container_width=True, key="ib_single_chart")
                 else: st.info("Không có dữ liệu.")
@@ -324,11 +340,11 @@ with tab_dash:
             with t1_compare:
                 c1_1, c1_2 = st.columns(2)
                 with c1_1:
-                    st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                    st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2004-07-12"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2004-07-12"))
                     f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=False)
                     if h1_c1: st.plotly_chart(f1_c1, use_container_width=True, key="ib_c1_chart")
                 with c1_2:
-                    st_2, en_2 = safe_date_range("Khung thời gian 2", 'ib_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                    st_2, en_2 = safe_date_range("Khung thời gian 2", 'ib_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"), min_date=pd.to_datetime("2004-07-12"))
                     f1_c2, h1_c2, _ = plot_interbank(df_ib, st_2, en_2, show_legend=True)
                     if h1_c2: st.plotly_chart(f1_c2, use_container_width=True, key="ib_c2_chart")
 
@@ -337,7 +353,7 @@ with tab_dash:
             st.markdown("#### 2. Cumulative Net OMO Injection")
             t2_single, t2_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
             with t2_single:
-                d2_st, d2_en = safe_date_range("Chọn khoảng thời gian", 'omo_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                d2_st, d2_en = safe_date_range("Chọn khoảng thời gian", 'omo_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"), min_date=pd.to_datetime("2010-10-14"))
                 f2, h2 = plot_omo(df_omo, d2_st, d2_en, show_legend=True)
                 if h2: st.plotly_chart(f2, use_container_width=True, key="omo_single_chart")
                 else: st.info("Không có dữ liệu.")
@@ -345,11 +361,11 @@ with tab_dash:
             with t2_compare:
                 c2_1, c2_2 = st.columns(2)
                 with c2_1:
-                    st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                    st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2010-10-14"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2010-10-14"))
                     f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=False)
                     if h2_c1: st.plotly_chart(f2_c1, use_container_width=True, key="omo_c1_chart")
                 with c2_2:
-                    st_22, en_22 = safe_date_range("Khung thời gian 2", 'omo_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                    st_22, en_22 = safe_date_range("Khung thời gian 2", 'omo_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"), min_date=pd.to_datetime("2010-10-14"))
                     f2_c2, h2_c2 = plot_omo(df_omo, st_22, en_22, show_legend=True)
                     if h2_c2: st.plotly_chart(f2_c2, use_container_width=True, key="omo_c2_chart")
 
@@ -368,11 +384,11 @@ with tab_dash:
             with tab_compare:
                 col_c1, col_c2 = st.columns(2)
                 with col_c1:
-                    date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today") - pd.Timedelta(days=30), key="yc1")
+                    date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today") - pd.Timedelta(days=30), min_value=pd.to_datetime("2013-03-19"), key="yc1")
                     fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
                     if h1: st.plotly_chart(fig_c1, use_container_width=True, key="yc_c1_chart")
                 with col_c2:
-                    date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today"), key="yc2")
+                    date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today"), min_value=pd.to_datetime("2013-03-19"), key="yc2")
                     fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
                     if h2: st.plotly_chart(fig_c2, use_container_width=True, key="yc_c2_chart")
 
@@ -381,7 +397,7 @@ with tab_dash:
             st.markdown("#### 4. Exchange Rates")
             t4_single, t4_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
             with t4_single:
-                d4_st, d4_en = safe_date_range("Chọn khoảng thời gian", 'fx_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                d4_st, d4_en = safe_date_range("Chọn khoảng thời gian", 'fx_single', pd.to_datetime("2025-01-01"), pd.to_datetime("today"), min_date=pd.to_datetime("2004-04-27"))
                 f4, h4, df_out4 = plot_exchange_rate(df_fx, d4_st, d4_en, show_legend=True)
                 if h4: 
                     st.plotly_chart(f4, use_container_width=True, key="fx_single_chart")
@@ -391,11 +407,11 @@ with tab_dash:
             with t4_compare:
                 c4_1, c4_2 = st.columns(2)
                 with c4_1:
-                    st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"))
+                    st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2004-04-27"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2004-04-27"))
                     f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=False)
                     if h4_c1: st.plotly_chart(f4_c1, use_container_width=True, key="fx_c1_chart")
                 with c4_2:
-                    st_42, en_42 = safe_date_range("Khung thời gian 2", 'fx_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"))
+                    st_42, en_42 = safe_date_range("Khung thời gian 2", 'fx_c2', pd.to_datetime("2025-01-01"), pd.to_datetime("today"), min_date=pd.to_datetime("2004-04-27"))
                     f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, st_42, en_42, show_legend=True)
                     if h4_c2: st.plotly_chart(f4_c2, use_container_width=True, key="fx_c2_chart")
 
