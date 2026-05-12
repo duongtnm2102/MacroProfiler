@@ -35,15 +35,19 @@ st.markdown("""
             white-space: nowrap;
         }
     }
-    /* Loại bỏ khoảng trống thừa giữa tab và nội dung */
+    /* Đồng bộ khoảng trống toàn hệ thống */
     div[data-baseweb="tab-list"] {
         margin-bottom: 0rem !important;
     }
     div[data-baseweb="tab-panel"] {
-        padding-top: 0rem !important;
+        padding-top: 1.5rem !important;
+    }
+    hr {
+        margin-top: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
     }
     div[data-testid="stMarkdownContainer"] h4 {
-        margin-top: -0.5rem !important;
+        margin-top: 0rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
