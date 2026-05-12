@@ -144,6 +144,8 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(type='category', nticks=15)
+    # Đẩy trục Y phụ (Rate) vào bên trong để không chiếm diện tích lề phải
+    fig.update_yaxes(ticklabelposition="inside", secondary_y=True)
     return fig, has_data, target_term
 
 def plot_omo(df_omo, start_date, end_date, show_legend=True):
