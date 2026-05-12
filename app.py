@@ -36,15 +36,14 @@ st.markdown("""
         }
     }
     /* Loại bỏ khoảng trống thừa giữa tab và nội dung */
-    div[data-testid="stTabs"] > div[data-baseweb="tab-list"] {
-        margin-bottom: 0rem;
+    div[data-baseweb="tab-list"] {
+        margin-bottom: 0rem !important;
     }
-    div[data-testid="stTabs"] > div[data-baseweb="tab-panel"] > div {
+    div[data-baseweb="tab-panel"] {
         padding-top: 0rem !important;
     }
-    h4 {
-        margin-top: 0rem !important;
-        padding-top: 0rem !important;
+    div[data-testid="stMarkdownContainer"] h4 {
+        margin-top: -0.5rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -250,12 +249,13 @@ def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
     return fig, has_data, df_out
 
 
+# --- ĐO KÍCH THƯỚC MÀN HÌNH ĐỂ NHẬN DIỆN MOBILE ---
+ui_width = st_javascript("window.innerWidth")
+is_mobile = ui_width > 0 and ui_width <= 768
+
 tab_dash, tab_chat = st.tabs(["📺 DASHBOARD MẶC ĐỊNH", "💬 AI VĨ MÔ"])
 
 with tab_dash:
-    # --- ĐO KÍCH THƯỚC MÀN HÌNH ĐỂ NHẬN DIỆN MOBILE ---
-    ui_width = st_javascript("window.innerWidth")
-    is_mobile = ui_width > 0 and ui_width <= 768
 
     data_dict = st.session_state.data_dict
     if not data_dict:
