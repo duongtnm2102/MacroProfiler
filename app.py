@@ -136,7 +136,12 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
             
             df1['Date_Str'] = df1['Date'].dt.strftime('%d/%m/%Y')
             
-            fig.add_trace(go.Bar(x=df1['Date_Str'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)', showlegend=show_legend), secondary_y=False)
+            if len(df1) > 1000:
+                # Nếu dữ liệu > 1000 ngày, dùng Scatter fill để chống đơ trình duyệt
+                fig.add_trace(go.Scatter(x=df1['Date_Str'], y=df1['Volume'], name='Volume', fill='tozeroy', mode='lines', line=dict(width=1, color='rgba(0, 100, 255, 0.8)'), showlegend=show_legend), secondary_y=False)
+            else:
+                fig.add_trace(go.Bar(x=df1['Date_Str'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)', showlegend=show_legend), secondary_y=False)
+                
             fig.add_trace(go.Scatter(x=df1['Date_Str'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2), showlegend=show_legend), secondary_y=True)
             
     fig.update_layout(
@@ -144,8 +149,8 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(type='category', nticks=15)
-    # Đẩy trục Y phụ (Rate) vào bên trong để không chiếm diện tích lề phải
-    fig.update_yaxes(ticklabelposition="inside", secondary_y=True)
+    # Ép TOÀN BỘ trục Y (trái & phải) vào trong lưới để 100% viền biểu đồ thẳng hàng với nhau
+    fig.update_yaxes(ticklabelposition="inside")
     return fig, has_data, target_term
 
 def plot_omo(df_omo, start_date, end_date, show_legend=True):
@@ -167,6 +172,7 @@ def plot_omo(df_omo, start_date, end_date, show_legend=True):
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(type='category', nticks=15)
+    fig.update_yaxes(ticklabelposition="inside")
     return fig, has_data
 
 def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", show_legend=True):
@@ -220,6 +226,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
+    fig.update_yaxes(ticklabelposition="inside")
     return fig, has_data
 
 def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
@@ -252,6 +259,7 @@ def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(type='category', nticks=15)
+    fig.update_yaxes(ticklabelposition="inside")
     return fig, has_data, df_out
 
 
@@ -346,7 +354,7 @@ with tab_dash:
             with t1_compare:
                 c1_1, c1_2 = st.columns(2)
                 with c1_1:
-                    st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2004-07-12"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2004-07-12"))
+                    st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2004-07-12"))
                     f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=False)
                     if h1_c1: st.plotly_chart(f1_c1, use_container_width=True, key="ib_c1_chart")
                 with c1_2:
@@ -367,7 +375,7 @@ with tab_dash:
             with t2_compare:
                 c2_1, c2_2 = st.columns(2)
                 with c2_1:
-                    st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2010-10-14"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2010-10-14"))
+                    st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2010-10-14"))
                     f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=False)
                     if h2_c1: st.plotly_chart(f2_c1, use_container_width=True, key="omo_c1_chart")
                 with c2_2:
@@ -413,7 +421,7 @@ with tab_dash:
             with t4_compare:
                 c4_1, c4_2 = st.columns(2)
                 with c4_1:
-                    st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2004-04-27"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2004-04-27"))
+                    st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', pd.to_datetime("2024-01-01"), pd.to_datetime("2024-12-31"), min_date=pd.to_datetime("2004-04-27"))
                     f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=False)
                     if h4_c1: st.plotly_chart(f4_c1, use_container_width=True, key="fx_c1_chart")
                 with c4_2:
