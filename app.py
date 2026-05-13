@@ -125,6 +125,11 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
     if not df_ib.empty:
         df1 = df_ib.copy()
         df1['Date'] = safe_to_datetime(df1['Date'])
+        
+        df_out = df1[(df1['Date'] >= start_date) & (df1['Date'] <= end_date)].copy()
+        if 'Term_Clean' in df_out.columns:
+            df_out = df_out.drop(columns=['Term_Clean'])
+            
         df1['Term_Clean'] = df1['Term'].astype(str).str.strip().str.upper()
         on_terms = [t for t in df1['Term_Clean'].unique() if t in ['ON', 'O/N', 'QUA ĐÊM', 'QUA DEM', 'OVERNIGHT']]
         target_term = on_terms[0] if on_terms else 'ON'
@@ -137,7 +142,6 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
             
             # --- LOẠI BỎ CÁC NGÀY KHÔNG CÓ DỮ LIỆU ---
             df1 = df1[(df1['Volume'] > 0) & (df1['Rate'] > 0)]
-            df_out = df1.copy()
             
             df1['Date_Str'] = df1['Date'].dt.strftime('%d/%m/%Y')
             
@@ -229,7 +233,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
-    return fig, has_data, df_us_out, df_vn_out
+    return fig, has_data
 
 def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
     fig = go.Figure()
@@ -311,15 +315,15 @@ with tab_dash:
             
             st.markdown("---")
             st.markdown("#### 3. Yield Curve")
-            fig3, has_data3, df_us_out3, df_vn_out3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
+            fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
             if has_data3: 
                 st.plotly_chart(fig3, use_container_width=True, key="m_yc_chart")
-                if not df_us_out3.empty:
-                    st.markdown("**US Yield Curve**")
-                    st.dataframe(df_us_out3, use_container_width=True)
-                if not df_vn_out3.empty:
-                    st.markdown("**VN Yield Curve**")
-                    st.dataframe(df_vn_out3, use_container_width=True)
+                st.markdown("**VN Yield Curve (Từ 01/01/2025 đến nay)**")
+                if not df_vn_yc.empty:
+                    df_vn_tbl = df_vn_yc.copy()
+                    df_vn_tbl['Date'] = safe_to_datetime(df_vn_tbl['Date'])
+                    df_vn_tbl = df_vn_tbl[df_vn_tbl['Date'] >= pd.to_datetime('2025-01-01')].sort_values(['Date'], ascending=[False])
+                    st.dataframe(df_vn_tbl, use_container_width=True)
             else: st.info("Không có dữ liệu Yield Curve.")
             
             st.markdown("---")
@@ -390,18 +394,15 @@ with tab_dash:
             tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
             
             with tab_latest:
-                fig3, has_data3, df_us_out3, df_vn_out3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
+                fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
                 if has_data3:
                     st.plotly_chart(fig3, use_container_width=True, key="yc_single_chart")
-                    col_us, col_vn = st.columns(2)
-                    with col_us:
-                        if not df_us_out3.empty:
-                            st.markdown("**US Yield Curve**")
-                            st.dataframe(df_us_out3, use_container_width=True)
-                    with col_vn:
-                        if not df_vn_out3.empty:
-                            st.markdown("**VN Yield Curve**")
-                            st.dataframe(df_vn_out3, use_container_width=True)
+                    st.markdown("**VN Yield Curve (Từ 01/01/2025 đến nay)**")
+                    if not df_vn_yc.empty:
+                        df_vn_tbl = df_vn_yc.copy()
+                        df_vn_tbl['Date'] = safe_to_datetime(df_vn_tbl['Date'])
+                        df_vn_tbl = df_vn_tbl[df_vn_tbl['Date'] >= pd.to_datetime('2025-01-01')].sort_values(['Date'], ascending=[False])
+                        st.dataframe(df_vn_tbl, use_container_width=True)
                 else:
                     st.info("Không có dữ liệu Yield Curve.")
                     
@@ -410,11 +411,11 @@ with tab_dash:
                 import datetime
                 with col_c1:
                     date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today").date() - pd.Timedelta(days=30), min_value=datetime.date(2013, 3, 19), max_value=datetime.date.today(), key="yc1")
-                    fig_c1, h1, _, _ = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
+                    fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
                     if h1: st.plotly_chart(fig_c1, use_container_width=True, key="yc_c1_chart")
                 with col_c2:
                     date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today").date(), min_value=datetime.date(2013, 3, 19), max_value=datetime.date.today(), key="yc2")
-                    fig_c2, h2, _, _ = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
+                    fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
                     if h2: st.plotly_chart(fig_c2, use_container_width=True, key="yc_c2_chart")
 
             st.markdown("---")
