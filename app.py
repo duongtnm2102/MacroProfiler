@@ -92,6 +92,30 @@ def safe_date_range(label, key_prefix, default_start, default_end, min_date=None
         return pd.to_datetime(res), pd.to_datetime(res)
     return pd.to_datetime(default_start), pd.to_datetime(default_end)
 
+def get_term_days(term_str):
+    if pd.isna(term_str):
+        return 99999
+    t = str(term_str).strip().lower()
+    if t in ['qua đêm', 'on', 'o/n', 'overnight']: return 1
+    if 'tuần' in t or 'week' in t:
+        num = re.findall(r'\d+', t)
+        return int(num[0]) * 7 if num else 7
+    if 'tháng' in t or 'month' in t or t.endswith('m'):
+        num = re.findall(r'\d+', t)
+        return int(num[0]) * 30 if num else 30
+    if 'năm' in t or 'year' in t or t.endswith('y'):
+        num = re.findall(r'\d+', t)
+        return int(num[0]) * 365 if num else 365
+    return 99999
+
+def sort_df_by_date_and_term(df):
+    if 'Date' not in df.columns or 'Term' not in df.columns:
+        return df
+    df_sorted = df.copy()
+    df_sorted['Term_Days'] = df_sorted['Term'].apply(get_term_days)
+    df_sorted = df_sorted.sort_values(['Date', 'Term_Days'], ascending=[False, True])
+    return df_sorted.drop(columns=['Term_Days'])
+
 def execute_python_code(code: str, data_dict: dict):
     match = re.search(r"```python\n(.*?)\n```", code, re.DOTALL)
     script = match.group(1) if match else code
@@ -235,8 +259,8 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
 
-def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
-    fig = go.Figure()
+def plot_exchange_rate(df_fx, df_us_fx, start_date, end_date, show_legend=True):
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
     has_data = False
     df_out = pd.DataFrame()
     if not df_fx.empty:
@@ -254,11 +278,36 @@ def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
                 df4_filter['Date_Str'] = df4_filter['Date'].dt.strftime('%d/%m/%Y')
                 
                 if 'USD_VND_Rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend))
+                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend), secondary_y=False)
                 if 'VCB_rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend))
+                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend), secondary_y=False)
                 if 'Black_Market_rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend))
+                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend), secondary_y=False)
+                    
+    if not df_us_fx.empty:
+        df5 = df_us_fx.copy()
+        df5['Date'] = safe_to_datetime(df5['Date'])
+        df5_filter = df5[(df5['Date'] >= start_date) & (df5['Date'] <= end_date)].sort_values('Date')
+        if not df5_filter.empty:
+            has_data = True
+            # Automatically find the DXY column
+            dxy_col = None
+            for c in df5_filter.columns:
+                if c != 'Date':
+                    dxy_col = c
+                    break
+                    
+            if dxy_col:
+                df5_filter[dxy_col] = pd.to_numeric(df5_filter[dxy_col].astype(str).str.replace(',', ''), errors='coerce')
+                df5_filter['Date_Str'] = df5_filter['Date'].dt.strftime('%d/%m/%Y')
+                
+                fig.add_trace(go.Scatter(x=df5_filter['Date_Str'], y=df5_filter[dxy_col], mode='lines', name='DXY', connectgaps=True, line=dict(color='orange', dash='dot'), showlegend=show_legend), secondary_y=True)
+                
+                df5_subset = df5_filter[['Date', dxy_col]].rename(columns={dxy_col: 'DXY'})
+                if not df_out.empty:
+                    df_out = pd.merge(df_out, df5_subset, on='Date', how='outer').sort_values('Date')
+                else:
+                    df_out = df5_subset
                     
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),
@@ -284,6 +333,7 @@ with tab_dash:
         df_us_yc = data_dict.get('US_Yield_Curve', pd.DataFrame())
         df_vn_yc = data_dict.get('SBV_Yield_Curve', pd.DataFrame())
         df_fx = data_dict.get('SBV_Exchange_Rate', pd.DataFrame())
+        df_us_fx = data_dict.get('US_Exchange_Rate', pd.DataFrame())
         df_fed = data_dict.get('FedWatch_Probabilities', pd.DataFrame())
 
         def highlight_prob(val):
@@ -302,7 +352,7 @@ with tab_dash:
             f1, h1, _, df_out1 = plot_interbank(df_ib, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
             if h1: 
                 st.plotly_chart(f1, use_container_width=True, key="m_ib_chart")
-                st.dataframe(df_out1.sort_values('Date', ascending=False), use_container_width=True)
+                st.dataframe(sort_df_by_date_and_term(df_out1), use_container_width=True)
             else: st.info("Không có dữ liệu.")
             
             st.markdown("---")
@@ -322,13 +372,13 @@ with tab_dash:
                 if not df_vn_yc.empty:
                     df_vn_tbl = df_vn_yc.copy()
                     df_vn_tbl['Date'] = safe_to_datetime(df_vn_tbl['Date'])
-                    df_vn_tbl = df_vn_tbl[df_vn_tbl['Date'] >= pd.to_datetime('2025-01-01')].sort_values(['Date'], ascending=[False])
-                    st.dataframe(df_vn_tbl, use_container_width=True)
+                    df_vn_tbl = df_vn_tbl[df_vn_tbl['Date'] >= pd.to_datetime('2025-01-01')]
+                    st.dataframe(sort_df_by_date_and_term(df_vn_tbl), use_container_width=True)
             else: st.info("Không có dữ liệu Yield Curve.")
             
             st.markdown("---")
             st.markdown("#### 4. Exchange Rates")
-            f4, h4, df_out4 = plot_exchange_rate(df_fx, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
+            f4, h4, df_out4 = plot_exchange_rate(df_fx, df_us_fx, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
             if h4: 
                 st.plotly_chart(f4, use_container_width=True, key="m_fx_chart")
                 st.dataframe(df_out4.sort_values('Date', ascending=False), use_container_width=True)
@@ -353,7 +403,7 @@ with tab_dash:
                 f1, h1, term1, df_out1 = plot_interbank(df_ib, d1_st, d1_en, show_legend=True)
                 if h1: 
                     st.plotly_chart(f1, use_container_width=True, key="ib_single_chart")
-                    st.dataframe(df_out1.sort_values('Date', ascending=False), use_container_width=True)
+                    st.dataframe(sort_df_by_date_and_term(df_out1), use_container_width=True)
                 else: st.info("Không có dữ liệu.")
                 
             with t1_compare:
@@ -401,8 +451,8 @@ with tab_dash:
                     if not df_vn_yc.empty:
                         df_vn_tbl = df_vn_yc.copy()
                         df_vn_tbl['Date'] = safe_to_datetime(df_vn_tbl['Date'])
-                        df_vn_tbl = df_vn_tbl[df_vn_tbl['Date'] >= pd.to_datetime('2025-01-01')].sort_values(['Date'], ascending=[False])
-                        st.dataframe(df_vn_tbl, use_container_width=True)
+                        df_vn_tbl = df_vn_tbl[df_vn_tbl['Date'] >= pd.to_datetime('2025-01-01')]
+                        st.dataframe(sort_df_by_date_and_term(df_vn_tbl), use_container_width=True)
                 else:
                     st.info("Không có dữ liệu Yield Curve.")
                     
@@ -423,7 +473,7 @@ with tab_dash:
             t4_single, t4_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
             with t4_single:
                 d4_st, d4_en = safe_date_range("Chọn khoảng thời gian", 'fx_single', "2025-01-01", "today", min_date="2004-04-27")
-                f4, h4, df_out4 = plot_exchange_rate(df_fx, d4_st, d4_en, show_legend=True)
+                f4, h4, df_out4 = plot_exchange_rate(df_fx, df_us_fx, d4_st, d4_en, show_legend=True)
                 if h4: 
                     st.plotly_chart(f4, use_container_width=True, key="fx_single_chart")
                     st.dataframe(df_out4.sort_values('Date', ascending=False), use_container_width=True)
@@ -433,11 +483,11 @@ with tab_dash:
                 c4_1, c4_2 = st.columns(2)
                 with c4_1:
                     st_41, en_41 = safe_date_range("Khung thời gian 1", 'fx_c1', "2024-01-01", "today", min_date="2004-04-27")
-                    f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, st_41, en_41, show_legend=False)
+                    f4_c1, h4_c1, _ = plot_exchange_rate(df_fx, df_us_fx, st_41, en_41, show_legend=False)
                     if h4_c1: st.plotly_chart(f4_c1, use_container_width=True, key="fx_c1_chart")
                 with c4_2:
                     st_42, en_42 = safe_date_range("Khung thời gian 2", 'fx_c2', "2025-01-01", "today", min_date="2004-04-27")
-                    f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, st_42, en_42, show_legend=True)
+                    f4_c2, h4_c2, _ = plot_exchange_rate(df_fx, df_us_fx, st_42, en_42, show_legend=True)
                     if h4_c2: st.plotly_chart(f4_c2, use_container_width=True, key="fx_c2_chart")
 
             st.markdown("---")
