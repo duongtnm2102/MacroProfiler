@@ -120,6 +120,7 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     has_data = False
     target_term = 'ON'
+    df_out = pd.DataFrame()
     
     if not df_ib.empty:
         df1 = df_ib.copy()
@@ -136,6 +137,7 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
             
             # --- LOẠI BỎ CÁC NGÀY KHÔNG CÓ DỮ LIỆU ---
             df1 = df1[(df1['Volume'] > 0) & (df1['Rate'] > 0)]
+            df_out = df1.copy()
             
             df1['Date_Str'] = df1['Date'].dt.strftime('%d/%m/%Y')
             
@@ -147,11 +149,12 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(type='category', nticks=15)
-    return fig, has_data, target_term
+    return fig, has_data, target_term, df_out
 
 def plot_omo(df_omo, start_date, end_date, show_legend=True):
     fig = go.Figure()
     has_data = False
+    df_out = pd.DataFrame()
     if not df_omo.empty:
         df2 = df_omo.copy()
         df2['Ngày'] = safe_to_datetime(df2['Ngày'])
@@ -160,6 +163,7 @@ def plot_omo(df_omo, start_date, end_date, show_legend=True):
             has_data = True
             df2['Giá trị bơm ròng'] = pd.to_numeric(df2['Giá trị bơm ròng'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
             df2['Cumulative'] = df2['Giá trị bơm ròng'].cumsum()
+            df_out = df2.copy()
             df2['Date_Str'] = df2['Ngày'].dt.strftime('%d/%m/%Y')
             fig.add_trace(go.Scatter(x=df2['Date_Str'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2), showlegend=show_legend))
             
@@ -168,7 +172,7 @@ def plot_omo(df_omo, start_date, end_date, show_legend=True):
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(type='category', nticks=15)
-    return fig, has_data
+    return fig, has_data, df_out
 
 def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", show_legend=True):
     fig = go.Figure()
@@ -179,6 +183,8 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
     }
     std_order = ['1M', '3M', '6M', '9M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y']
     has_data = False
+    df_us_out = pd.DataFrame()
+    df_vn_out = pd.DataFrame()
 
     if not df_us_yc.empty:
         df3_us = df_us_yc.copy()
@@ -188,6 +194,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
         if not df3_us.empty:
             has_data = True
             latest_us = df3_us.loc[df3_us['Date'].idxmax()]
+            df_us_out = latest_us.to_frame().T
             terms_us_avail = [t for t in std_order if t in latest_us.index]
             rates_us = [pd.to_numeric(latest_us[t], errors='coerce') for t in terms_us_avail]
             fig.add_trace(go.Scatter(x=terms_us_avail, y=rates_us, mode='lines+markers+text', name='US Yield Curve', showlegend=show_legend,
@@ -202,6 +209,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
             has_data = True
             latest_date_vn = df3_vn['Date'].max()
             latest_vn_df = df3_vn[df3_vn['Date'] == latest_date_vn].copy()
+            df_vn_out = latest_vn_df.copy()
             terms_vn_raw = latest_vn_df['Term'].astype(str).str.strip().str.lower().tolist()
             terms_vn_mapped = [vn_term_map.get(t, t.upper()) for t in terms_vn_raw]
             
@@ -221,7 +229,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
-    return fig, has_data
+    return fig, has_data, df_us_out, df_vn_out
 
 def plot_exchange_rate(df_fx, start_date, end_date, show_legend=True):
     fig = go.Figure()
@@ -287,20 +295,31 @@ with tab_dash:
         if is_mobile:
             # GIAO DIỆN MOBILE
             st.markdown("#### 1. Interbank ON Rate & Volume")
-            f1, h1, _ = plot_interbank(df_ib, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
-            if h1: st.plotly_chart(f1, use_container_width=True, key="m_ib_chart")
+            f1, h1, _, df_out1 = plot_interbank(df_ib, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
+            if h1: 
+                st.plotly_chart(f1, use_container_width=True, key="m_ib_chart")
+                st.dataframe(df_out1.sort_values('Date', ascending=False), use_container_width=True)
             else: st.info("Không có dữ liệu.")
             
             st.markdown("---")
             st.markdown("#### 2. Cumulative Net OMO Injection")
-            f2, h2 = plot_omo(df_omo, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
-            if h2: st.plotly_chart(f2, use_container_width=True, key="m_omo_chart")
+            f2, h2, df_out2 = plot_omo(df_omo, pd.to_datetime("2025-01-01"), pd.to_datetime("today"), show_legend=True)
+            if h2: 
+                st.plotly_chart(f2, use_container_width=True, key="m_omo_chart")
+                st.dataframe(df_out2.sort_values('Ngày', ascending=False), use_container_width=True)
             else: st.info("Không có dữ liệu.")
             
             st.markdown("---")
             st.markdown("#### 3. Yield Curve")
-            fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
-            if has_data3: st.plotly_chart(fig3, use_container_width=True, key="m_yc_chart")
+            fig3, has_data3, df_us_out3, df_vn_out3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
+            if has_data3: 
+                st.plotly_chart(fig3, use_container_width=True, key="m_yc_chart")
+                if not df_us_out3.empty:
+                    st.markdown("**US Yield Curve**")
+                    st.dataframe(df_us_out3, use_container_width=True)
+                if not df_vn_out3.empty:
+                    st.markdown("**VN Yield Curve**")
+                    st.dataframe(df_vn_out3, use_container_width=True)
             else: st.info("Không có dữ liệu Yield Curve.")
             
             st.markdown("---")
@@ -327,19 +346,21 @@ with tab_dash:
             t1_single, t1_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
             with t1_single:
                 d1_st, d1_en = safe_date_range("Chọn khoảng thời gian", 'ib_single', "2025-01-01", "today", min_date="2004-07-12")
-                f1, h1, term1 = plot_interbank(df_ib, d1_st, d1_en, show_legend=True)
-                if h1: st.plotly_chart(f1, use_container_width=True, key="ib_single_chart")
+                f1, h1, term1, df_out1 = plot_interbank(df_ib, d1_st, d1_en, show_legend=True)
+                if h1: 
+                    st.plotly_chart(f1, use_container_width=True, key="ib_single_chart")
+                    st.dataframe(df_out1.sort_values('Date', ascending=False), use_container_width=True)
                 else: st.info("Không có dữ liệu.")
                 
             with t1_compare:
                 c1_1, c1_2 = st.columns(2)
                 with c1_1:
                     st_1, en_1 = safe_date_range("Khung thời gian 1", 'ib_c1', "2024-01-01", "today", min_date="2004-07-12")
-                    f1_c1, h1_c1, _ = plot_interbank(df_ib, st_1, en_1, show_legend=False)
+                    f1_c1, h1_c1, _, _ = plot_interbank(df_ib, st_1, en_1, show_legend=False)
                     if h1_c1: st.plotly_chart(f1_c1, use_container_width=True, key="ib_c1_chart")
                 with c1_2:
                     st_2, en_2 = safe_date_range("Khung thời gian 2", 'ib_c2', "2025-01-01", "today", min_date="2004-07-12")
-                    f1_c2, h1_c2, _ = plot_interbank(df_ib, st_2, en_2, show_legend=True)
+                    f1_c2, h1_c2, _, _ = plot_interbank(df_ib, st_2, en_2, show_legend=True)
                     if h1_c2: st.plotly_chart(f1_c2, use_container_width=True, key="ib_c2_chart")
 
             st.markdown("---")
@@ -347,19 +368,21 @@ with tab_dash:
             t2_single, t2_compare = st.tabs(["🔥 Khung Thời Gian Đơn", "⚖️ So sánh 2 Khung Thời Gian"])
             with t2_single:
                 d2_st, d2_en = safe_date_range("Chọn khoảng thời gian", 'omo_single', "2025-01-01", "today", min_date="2010-10-14")
-                f2, h2 = plot_omo(df_omo, d2_st, d2_en, show_legend=True)
-                if h2: st.plotly_chart(f2, use_container_width=True, key="omo_single_chart")
+                f2, h2, df_out2 = plot_omo(df_omo, d2_st, d2_en, show_legend=True)
+                if h2: 
+                    st.plotly_chart(f2, use_container_width=True, key="omo_single_chart")
+                    st.dataframe(df_out2.sort_values('Ngày', ascending=False), use_container_width=True)
                 else: st.info("Không có dữ liệu.")
                 
             with t2_compare:
                 c2_1, c2_2 = st.columns(2)
                 with c2_1:
                     st_21, en_21 = safe_date_range("Khung thời gian 1", 'omo_c1', "2024-01-01", "today", min_date="2010-10-14")
-                    f2_c1, h2_c1 = plot_omo(df_omo, st_21, en_21, show_legend=False)
+                    f2_c1, h2_c1, _ = plot_omo(df_omo, st_21, en_21, show_legend=False)
                     if h2_c1: st.plotly_chart(f2_c1, use_container_width=True, key="omo_c1_chart")
                 with c2_2:
                     st_22, en_22 = safe_date_range("Khung thời gian 2", 'omo_c2', "2025-01-01", "today", min_date="2010-10-14")
-                    f2_c2, h2_c2 = plot_omo(df_omo, st_22, en_22, show_legend=True)
+                    f2_c2, h2_c2, _ = plot_omo(df_omo, st_22, en_22, show_legend=True)
                     if h2_c2: st.plotly_chart(f2_c2, use_container_width=True, key="omo_c2_chart")
 
             st.markdown("---")
@@ -367,9 +390,18 @@ with tab_dash:
             tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
             
             with tab_latest:
-                fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
+                fig3, has_data3, df_us_out3, df_vn_out3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
                 if has_data3:
                     st.plotly_chart(fig3, use_container_width=True, key="yc_single_chart")
+                    col_us, col_vn = st.columns(2)
+                    with col_us:
+                        if not df_us_out3.empty:
+                            st.markdown("**US Yield Curve**")
+                            st.dataframe(df_us_out3, use_container_width=True)
+                    with col_vn:
+                        if not df_vn_out3.empty:
+                            st.markdown("**VN Yield Curve**")
+                            st.dataframe(df_vn_out3, use_container_width=True)
                 else:
                     st.info("Không có dữ liệu Yield Curve.")
                     
@@ -378,11 +410,11 @@ with tab_dash:
                 import datetime
                 with col_c1:
                     date_1 = st.date_input("Chọn ngày 1", pd.to_datetime("today").date() - pd.Timedelta(days=30), min_value=datetime.date(2013, 3, 19), max_value=datetime.date.today(), key="yc1")
-                    fig_c1, h1 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
+                    fig_c1, h1, _, _ = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_1), title=f"Đến ngày {date_1.strftime('%d/%m/%Y')}", show_legend=False)
                     if h1: st.plotly_chart(fig_c1, use_container_width=True, key="yc_c1_chart")
                 with col_c2:
                     date_2 = st.date_input("Chọn ngày 2", pd.to_datetime("today").date(), min_value=datetime.date(2013, 3, 19), max_value=datetime.date.today(), key="yc2")
-                    fig_c2, h2 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
+                    fig_c2, h2, _, _ = plot_yield_curve(df_us_yc, df_vn_yc, target_date=pd.to_datetime(date_2), title=f"Đến ngày {date_2.strftime('%d/%m/%Y')}", show_legend=True)
                     if h2: st.plotly_chart(fig_c2, use_container_width=True, key="yc_c2_chart")
 
             st.markdown("---")
