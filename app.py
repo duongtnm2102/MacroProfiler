@@ -527,62 +527,62 @@ with tab_chat:
                     message_placeholder.markdown("🔄 Đang xử lý dữ liệu và tạo báo cáo vĩ mô (có thể mất 1-2 phút)...")
                     data_context = process_macro_data(st.session_state.data_dict)
                 
-                prompt_path = "prompt.txt"
-                if os.path.exists(prompt_path):
-                    with open(prompt_path, "r", encoding="utf-8") as f:
-                        prompt_content = f.read()
-                else:
-                    prompt_content = "Vui lòng upload file prompt.txt."
-                    
-                report_md = generate_strategic_report(prompt_content, data_context)
-                message_placeholder.markdown(report_md)
-                
-                with st.spinner("Đang gửi báo cáo qua email..."):
-                    if send_daily_report(report_md):
-                        st.success("Đã gửi báo cáo qua Email thành công!")
+                    prompt_path = "prompt.txt"
+                    if os.path.exists(prompt_path):
+                        with open(prompt_path, "r", encoding="utf-8") as f:
+                            prompt_content = f.read()
                     else:
-                        st.error("Chưa thể gửi email (kiểm tra cấu hình SMTP).")
+                        prompt_content = "Vui lòng upload file prompt.txt."
                         
-                st.session_state.messages.append({"role": "assistant", "content": report_md})
-                
-            else:
-                chat_context = ""
-                for msg in st.session_state.messages:
-                    role_name = "USER" if msg["role"] == "user" else "ASSISTANT"
-                    chat_context += f"\n{role_name}: {msg['content']}"
+                    report_md = generate_strategic_report(prompt_content, data_context)
+                    message_placeholder.markdown(report_md)
                     
-                MAX_LOOPS = 3
-                current_loop = 0
-                
-                with st.spinner("AI đang tư duy và phân tích..."):
-                    while current_loop < MAX_LOOPS:
-                        response = data_analyst_agent(chat_context)
-                        match = re.search(r"```python\n(.*?)\n```", response, re.DOTALL)
+                    with st.spinner("Đang gửi báo cáo qua email..."):
+                        if send_daily_report(report_md):
+                            st.success("Đã gửi báo cáo qua Email thành công!")
+                        else:
+                            st.error("Chưa thể gửi email (kiểm tra cấu hình SMTP).")
+                            
+                    st.session_state.messages.append({"role": "assistant", "content": report_md})
+                    
+                else:
+                    chat_context = ""
+                    for msg in st.session_state.messages:
+                        role_name = "USER" if msg["role"] == "user" else "ASSISTANT"
+                        chat_context += f"\n{role_name}: {msg['content']}"
                         
-                        if match:
-                            code_block = match.group(0)
-                            script = match.group(1)
-                            text_part = response.replace(code_block, "").strip()
-                            if text_part:
-                                st.markdown(text_part)
-                                
-                            # Ẩn phần hiển thị code
-                            # st.markdown("🧑‍💻 **Đang chạy code trích xuất dữ liệu:**")
-                            # st.code(script, language="python")
+                    MAX_LOOPS = 3
+                    current_loop = 0
+                    
+                    with st.spinner("AI đang tư duy và phân tích..."):
+                        while current_loop < MAX_LOOPS:
+                            response = data_analyst_agent(chat_context)
+                            match = re.search(r"```python\n(.*?)\n```", response, re.DOTALL)
                             
-                            output, err = execute_python_code(script, st.session_state.data_dict)
-                            obs = f"\nKẾT QUẢ CHẠY MÃ HỆ THỐNG:\nOutput:\n{output}\nError:\n{err}"
-                            
-                            chat_context += f"\nASSISTANT (Sinh code):\n{code_block}\nSYSTEM (Observation): {obs}"
-                            
-                            # Ẩn phần hiển thị lỗi và dữ liệu thô
-                            # if err:
-                            #     st.error(f"Lỗi khi chạy code: {err}")
-                            # if output:
-                            #     with st.expander("Xem dữ liệu thô"):
-                            #         st.text(output)
+                            if match:
+                                code_block = match.group(0)
+                                script = match.group(1)
+                                text_part = response.replace(code_block, "").strip()
+                                if text_part:
+                                    st.markdown(text_part)
                                     
-                            current_loop += 1
+                                # Ẩn phần hiển thị code
+                                # st.markdown("🧑‍💻 **Đang chạy code trích xuất dữ liệu:**")
+                                # st.code(script, language="python")
+                                
+                                output, err = execute_python_code(script, st.session_state.data_dict)
+                                obs = f"\nKẾT QUẢ CHẠY MÃ HỆ THỐNG:\nOutput:\n{output}\nError:\n{err}"
+                                
+                                chat_context += f"\nASSISTANT (Sinh code):\n{code_block}\nSYSTEM (Observation): {obs}"
+                                
+                                # Ẩn phần hiển thị lỗi và dữ liệu thô
+                                # if err:
+                                #     st.error(f"Lỗi khi chạy code: {err}")
+                                # if output:
+                                #     with st.expander("Xem dữ liệu thô"):
+                                #         st.text(output)
+                                        
+                                current_loop += 1
                             continue
                         else:
                             message_placeholder.markdown(response)
