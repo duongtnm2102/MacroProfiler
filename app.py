@@ -583,8 +583,8 @@ with tab_chat:
                                 #         st.text(output)
                                         
                                 current_loop += 1
-                            continue
-                        else:
-                            message_placeholder.markdown(response)
-                            st.session_state.messages.append({"role": "assistant", "content": response})
-                            break
+                                continue
+                            else:
+                                message_placeholder.markdown(response)
+                                st.session_state.messages.append({"role": "assistant", "content": response})
+                                break
