@@ -266,49 +266,53 @@ def plot_exchange_rate(df_fx, df_us_fx, start_date, end_date, show_legend=True):
     if not df_fx.empty:
         df4 = df_fx.copy()
         df4['Date'] = safe_to_datetime(df4['Date'])
-        if not df4.empty:
-            df4_filter = df4[(df4['Date'] >= start_date) & (df4['Date'] <= end_date)].sort_values('Date')
-            if not df4_filter.empty:
-                has_data = True
-                df_out = df4_filter.copy()
-                for col in ['USD_VND_Rate', 'VCB_rate', 'Black_Market_rate']:
-                    if col in df4_filter.columns:
-                        df4_filter[col] = pd.to_numeric(df4_filter[col].astype(str).str.replace(',', ''), errors='coerce')
-                
-                df4_filter['Date_Str'] = df4_filter['Date'].dt.strftime('%d/%m/%Y')
-                
-                if 'USD_VND_Rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend), secondary_y=False)
-                if 'VCB_rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend), secondary_y=False)
-                if 'Black_Market_rate' in df4_filter.columns:
-                    fig.add_trace(go.Scatter(x=df4_filter['Date_Str'], y=df4_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend), secondary_y=False)
-                    
-    if not df_us_fx.empty:
-        df5 = df_us_fx.copy()
-        df5['Date'] = safe_to_datetime(df5['Date'])
-        df5_filter = df5[(df5['Date'] >= start_date) & (df5['Date'] <= end_date)].sort_values('Date')
-        if not df5_filter.empty:
-            has_data = True
-            # Automatically find the DXY column
+        
+        cols_to_keep_vn = ['Date'] + [c for c in ['USD_VND_Rate', 'VCB_rate', 'Black_Market_rate'] if c in df4.columns]
+        df_merged = df4[cols_to_keep_vn].copy()
+        for col in cols_to_keep_vn[1:]:
+            df_merged[col] = pd.to_numeric(df_merged[col].astype(str).str.replace(',', ''), errors='coerce')
+            
+        if not df_us_fx.empty:
+            df5 = df_us_fx.copy()
+            df5['Date'] = safe_to_datetime(df5['Date'])
+            
             dxy_col = None
-            for c in df5_filter.columns:
+            for c in df5.columns:
                 if c != 'Date':
                     dxy_col = c
                     break
                     
             if dxy_col:
-                df5_filter[dxy_col] = pd.to_numeric(df5_filter[dxy_col].astype(str).str.replace(',', ''), errors='coerce')
-                df5_filter['Date_Str'] = df5_filter['Date'].dt.strftime('%d/%m/%Y')
+                df5[dxy_col] = pd.to_numeric(df5[dxy_col].astype(str).str.replace(',', ''), errors='coerce')
+                df5_subset = df5[['Date', dxy_col]].rename(columns={dxy_col: 'DXY'})
                 
-                fig.add_trace(go.Scatter(x=df5_filter['Date_Str'], y=df5_filter[dxy_col], mode='lines', name='DXY', connectgaps=True, line=dict(color='orange', dash='dot'), showlegend=show_legend), secondary_y=True)
+                df_merged = pd.merge(df_merged, df5_subset, on='Date', how='outer').sort_values('Date')
                 
-                df5_subset = df5_filter[['Date', dxy_col]].rename(columns={dxy_col: 'DXY'})
-                if not df_out.empty:
-                    df_out = pd.merge(df_out, df5_subset, on='Date', how='outer').sort_values('Date')
-                else:
-                    df_out = df5_subset
-                    
+                # Forward fill DXY
+                df_merged['DXY'] = df_merged['DXY'].ffill()
+                
+        # Filter by date range
+        df_filter = df_merged[(df_merged['Date'] >= start_date) & (df_merged['Date'] <= end_date)].sort_values('Date')
+        
+        if not df_filter.empty:
+            has_data = True
+            
+            # Remove rows where all rates are NaN to clean up axis
+            rate_cols = [c for c in ['USD_VND_Rate', 'VCB_rate', 'Black_Market_rate', 'DXY'] if c in df_filter.columns]
+            df_filter = df_filter.dropna(subset=rate_cols, how='all')
+            
+            df_out = df_filter.copy()
+            df_filter['Date_Str'] = df_filter['Date'].dt.strftime('%d/%m/%Y')
+            
+            if 'USD_VND_Rate' in df_filter.columns:
+                fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend), secondary_y=False)
+            if 'VCB_rate' in df_filter.columns:
+                fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend), secondary_y=False)
+            if 'Black_Market_rate' in df_filter.columns:
+                fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend), secondary_y=False)
+            if 'DXY' in df_filter.columns:
+                fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['DXY'], mode='lines', name='DXY', connectgaps=True, line=dict(color='orange', dash='dot'), showlegend=show_legend), secondary_y=True)
+                
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
