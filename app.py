@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import re
 import os
 import io
@@ -100,12 +100,12 @@ def get_term_days(term_str):
     if 'tuần' in t or 'week' in t:
         num = re.findall(r'\d+', t)
         return int(num[0]) * 7 if num else 7
-    if 'tháng' in t or 'month' in t or t.endswith('m'):
-        num = re.findall(r'\d+', t)
-        return int(num[0]) * 30 if num else 30
     if 'năm' in t or 'year' in t or t.endswith('y'):
         num = re.findall(r'\d+', t)
         return int(num[0]) * 365 if num else 365
+    if 'tháng' in t or 'month' in t or t.endswith('m'):
+        num = re.findall(r'\d+', t)
+        return int(num[0]) * 30 if num else 30
     return 99999
 
 def sort_df_by_date_and_term(df):
