@@ -561,19 +561,21 @@ with tab_chat:
                             if text_part:
                                 st.markdown(text_part)
                                 
-                            st.markdown("🧑‍💻 **Đang chạy code trích xuất dữ liệu:**")
-                            st.code(script, language="python")
+                            # Ẩn phần hiển thị code
+                            # st.markdown("🧑‍💻 **Đang chạy code trích xuất dữ liệu:**")
+                            # st.code(script, language="python")
                             
                             output, err = execute_python_code(script, st.session_state.data_dict)
                             obs = f"\nKẾT QUẢ CHẠY MÃ HỆ THỐNG:\nOutput:\n{output}\nError:\n{err}"
                             
                             chat_context += f"\nASSISTANT (Sinh code):\n{code_block}\nSYSTEM (Observation): {obs}"
                             
-                            if err:
-                                st.error(f"Lỗi khi chạy code: {err}")
-                            if output:
-                                with st.expander("Xem dữ liệu thô"):
-                                    st.text(output)
+                            # Ẩn phần hiển thị lỗi và dữ liệu thô
+                            # if err:
+                            #     st.error(f"Lỗi khi chạy code: {err}")
+                            # if output:
+                            #     with st.expander("Xem dữ liệu thô"):
+                            #         st.text(output)
                                     
                             current_loop += 1
                             continue
