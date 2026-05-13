@@ -505,22 +505,27 @@ with tab_dash:
                     st.dataframe(styled_fed, use_container_width=True)
 
 with tab_chat:
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    chat_container = st.container()
+    
+    with chat_container:
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
     if prompt := st.chat_input("Nhập lệnh (VD: Cập nhật, Thống kê tỷ giá OMO...)"):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        
+        with chat_container:
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            is_report = bool(re.search(r'(cập nhật|báo cáo)', prompt.lower()))
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                is_report = bool(re.search(r'(cập nhật|báo cáo)', prompt.lower()))
                 
-            if is_report:
-                message_placeholder.markdown("🔄 Đang xử lý dữ liệu và tạo báo cáo vĩ mô (có thể mất 1-2 phút)...")
-                data_context = process_macro_data(st.session_state.data_dict)
+                if is_report:
+                    message_placeholder.markdown("🔄 Đang xử lý dữ liệu và tạo báo cáo vĩ mô (có thể mất 1-2 phút)...")
+                    data_context = process_macro_data(st.session_state.data_dict)
                 
                 prompt_path = "prompt.txt"
                 if os.path.exists(prompt_path):
