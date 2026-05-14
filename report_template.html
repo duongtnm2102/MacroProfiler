@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>VN McWatch - Institutional Macro Research</title>
+    <!-- Import Google Fonts: Playfair Display cho Tiêu đề (cực sang trọng), Lato cho Nội dung -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-dark: #001529;
+            --brand-primary: #003366;
+            --brand-accent: #C9A050; /* Institutional Gold */
+            --brand-accent-light: #E8D3A2;
+            --text-main: #1C1C1C;
+            --text-secondary: #5A5A5A;
+            --bg-page: #FFFFFF;
+            --bg-offset: #F4F7F6;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            background: var(--bg-page);
+            font-size: 13px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        h1, h2, h3, h4, h5 {
+            font-family: 'Playfair Display', serif;
+            margin: 0;
+            color: var(--brand-dark);
+        }
+
+        /* --- UTILITIES --- */
+        .page-break { page-break-before: always; }
+        .text-gold { color: var(--brand-accent); }
+        
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* --- COVER PAGE --- */
+        .cover-page {
+            height: 1050px; /* Chiều cao chuẩn 1 trang A4 */
+            position: relative;
+            background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-primary) 100%);
+            color: white;
+            padding: 60px 50px;
+            box-sizing: border-box;
+            border: 15px solid var(--brand-accent);
+        }
+        .cover-top {
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 20px;
+            margin-bottom: 80px;
+        }
+        .cover-logo {
+            font-size: 38px;
+            font-weight: 900;
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .cover-logo span { color: var(--brand-accent); }
+        .cover-subtitle {
+            font-family: 'Lato', sans-serif;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--brand-accent-light);
+            margin-top: 5px;
+        }
+        
+        .cover-title-area {
+            margin-top: 100px;
+            border-left: 8px solid var(--brand-accent);
+            padding-left: 30px;
+        }
+        .cover-type {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--brand-accent);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        .cover-main-title {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 30px;
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .cover-date-badge {
+            background: var(--brand-accent);
+            color: var(--brand-dark);
+            display: inline-block;
+            padding: 10px 25px;
+            font-size: 18px;
+            font-weight: 900;
+            text-transform: uppercase;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            font-family: 'Lato', sans-serif;
+        }
+
+        .cover-highlights {
+            position: absolute;
+            bottom: 60px;
+            left: 50px;
+            right: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 30px;
+            border-left: 4px solid var(--brand-accent);
+        }
+        .cover-highlights h3 {
+            color: white;
+            font-family: 'Lato', sans-serif;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+        }
+        
+        /* --- INTERNAL PAGES --- */
+        .internal-page {
+            padding: 40px 50px;
+            background-color: white;
+            position: relative;
+        }
+        
+        /* INTERNAL HEADER */
+        .page-header {
+            border-bottom: 2px solid var(--brand-dark);
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+            display: table;
+            width: 100%;
+        }
+        .ph-left { display: table-cell; vertical-align: bottom; }
+        .ph-right { display: table-cell; vertical-align: bottom; text-align: right; font-family: 'Lato', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); }
+        .ph-logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; color: var(--brand-dark); }
+        .ph-logo span { color: var(--brand-accent); }
+
+        /* EXECUTIVE SUMMARY COMPLEX */
+        .exec-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 50px;
+        }
+        .exec-main {
+            display: table-cell;
+            width: 65%;
+            padding-right: 40px;
+            vertical-align: top;
+        }
+        .exec-sidebar {
+            display: table-cell;
+            width: 35%;
+            background: var(--brand-dark);
+            color: white;
+            padding: 30px;
+            vertical-align: top;
+            border-top: 5px solid var(--brand-accent);
+        }
+        .exec-sidebar h3 { color: var(--brand-accent); font-family: 'Lato', sans-serif; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; }
+        .exec-sidebar p { font-size: 12.5px; color: #D1D5DB; margin-bottom: 15px; line-height: 1.5; font-family: 'Lato', sans-serif;}
+        
+        .drop-cap:first-letter {
+            float: left;
+            font-size: 60px;
+            line-height: 50px;
+            padding-top: 4px;
+            padding-right: 12px;
+            font-family: 'Playfair Display', serif;
+            color: var(--brand-primary);
+            font-weight: 900;
+        }
+
+        /* SECTION COMPLEX */
+        .complex-section {
+            margin-bottom: 60px;
+        }
+        .sec-title-wrap {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 60px;
+        }
+        .sec-number {
+            position: absolute;
+            left: 0;
+            top: -10px;
+            font-size: 48px;
+            font-weight: 900;
+            color: rgba(0, 51, 102, 0.1);
+            font-family: 'Playfair Display', serif;
+        }
+        .sec-title {
+            font-size: 26px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--brand-accent);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+        
+        /* BIỂU ĐỒ & DỮ LIỆU BÊN CẠNH */
+        .chart-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .chart-area {
+            display: table-cell;
+            width: 70%;
+            vertical-align: top;
+            border: 1px solid #E5E7EB;
+            background: #FAFAFA;
+            padding: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .chart-area img { width: 100%; height: auto; display: block; border: 1px solid #E5E7EB; }
+        
+        .data-sidebar {
+            display: table-cell;
+            width: 30%;
+            vertical-align: top;
+            padding-left: 25px;
+        }
+        .fact-box {
+            background: var(--bg-offset);
+            border-left: 4px solid var(--brand-primary);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .fact-label { font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; letter-spacing: 1px; font-family: 'Lato', sans-serif;}
+        .fact-value { font-size: 22px; font-weight: 900; color: var(--brand-dark); font-family: 'Playfair Display', serif; margin-top: 5px; }
+        
+        /* CHIA CỘT NỘI DUNG AI */
+        .analysis-two-col {
+            column-count: 2;
+            column-gap: 40px;
+            text-align: justify;
+            margin-top: 25px;
+            border-top: 1px solid #E5E7EB;
+            padding-top: 25px;
+        }
+        .analysis-two-col p { margin-top: 0; margin-bottom: 15px; }
+        
+        .pull-quote {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-style: italic;
+            color: var(--brand-primary);
+            border-top: 2px solid var(--brand-accent);
+            border-bottom: 2px solid var(--brand-accent);
+            padding: 20px 0;
+            margin: 25px 0;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        /* WATERMARK */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            font-family: 'Playfair Display', serif;
+            color: rgba(0,0,0,0.03);
+            font-weight: 900;
+            z-index: 0;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .content-over-watermark {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* PAGE FOOTER */
+        .page-footer {
+            margin-top: 50px;
+            border-top: 1px solid #E5E7EB;
+            padding-top: 15px;
+            display: table;
+            width: 100%;
+        }
+        .pf-left { display: table-cell; font-size: 10px; color: var(--text-secondary); width: 80%; text-align: justify; }
+        .pf-right { display: table-cell; text-align: right; width: 20%; vertical-align: bottom; font-weight: 700; color: var(--brand-dark); font-family: 'Lato', sans-serif;}
+
+    </style>
+</head>
+<body>
+    
+    <!-- TRANG 1: COVER PAGE MẶT TRƯỚC -->
+    <div class="container cover-page">
+        <div class="cover-top">
+            <div class="cover-logo">VN <span>McWatch</span></div>
+            <div class="cover-subtitle">Institutional Strategic Macro-Intelligence</div>
+        </div>
+        
+        <div class="cover-title-area">
+            <div class="cover-type">Daily Market Research</div>
+            <div class="cover-main-title">Phân Tích Chuyên Sâu<br>Thị Trường Tiền Tệ & Ngoại Hối</div>
+            <div class="cover-date-badge">{{ report_date|default('14 THÁNG 05, 2026') }}</div>
+        </div>
+        
+        <div class="cover-highlights">
+            <h3>Key Market Highlights</h3>
+            <div style="column-count: 2; column-gap: 30px; font-size: 13px; line-height: 1.6; color: #D1D5DB; font-family: 'Lato', sans-serif;">
+                {{ cover_highlights|default('Những điểm nhấn chính về thanh khoản OMO, tỷ giá hối đoái, và lợi suất trái phiếu chính phủ sẽ được AI tự động trích lọc và đưa lên trang bìa để cung cấp cái nhìn cực nhanh cho ban lãnh đạo.') }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- NGẮT TRANG SANG TRANG 2 -->
+    <div class="page-break"></div>
+
+    <!-- TRANG 2: TỔNG QUAN CHIẾN LƯỢC & INTERBANK -->
+    <div class="container internal-page">
+        <div class="watermark">VN MCWATCH</div>
+        
+        <div class="content-over-watermark">
+            <!-- HEADER -->
+            <div class="page-header">
+                <div class="ph-left">
+                    <div class="ph-logo">VN <span>McWatch</span></div>
+                </div>
+                <div class="ph-right">{{ report_date|default('14 MAY 2026') }} | MACRO RESEARCH</div>
+            </div>
+
+            <!-- EXECUTIVE SUMMARY (CHIA CỘT BẤT ĐỐI XỨNG) -->
+            <div class="exec-grid">
+                <div class="exec-main">
+                    <h2 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid var(--brand-accent); padding-bottom: 10px; display: inline-block;">TỔNG QUAN CHIẾN LƯỢC</h2>
+                    <div style="text-align: justify; font-size: 14px;">
+                        <p class="drop-cap">{{ summary_content_first_paragraph|default('T') }}</p>
+                        {{ summary_content_rest|default('hị trường đang có những diễn biến đáng chú ý. Nội dung phân tích tổng hợp từ AI sẽ được nạp vào đây, bao gồm các đánh giá vĩ mô, tác động của chính sách tiền tệ và định hướng chung của thị trường trong ngày.') }}
+                    </div>
+                </div>
+                <div class="exec-sidebar">
+                    <h3>Executive Insights</h3>
+                    {{ executive_insights_list|default('<p><strong>Lãi suất ON:</strong> Biến động mạnh do yếu tố thanh khoản cục bộ.</p><p><strong>Tỷ giá USD/VND:</strong> Áp lực từ chỉ số DXY tăng trên thị trường quốc tế.</p><p><strong>Dự báo SBV:</strong> Có thể tiếp tục can thiệp qua kênh tín phiếu.</p>') }}
+                    <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; font-size: 11px; font-style: italic;">
+                        "Thanh khoản là chìa khóa của mọi vận động thị trường ngắn hạn."
+                    </div>
+                </div>
+            </div>
+
+            <!-- INTERBANK MARKET -->
+            <div class="complex-section">
+                <div class="sec-title-wrap">
+                    <div class="sec-number">01</div>
+                    <div class="sec-title">Thị Trường Liên Ngân Hàng (Interbank)</div>
+                </div>
+                
+                <div class="chart-grid">
+                    <div class="chart-area">
+                        <img src="{{ interbank_img }}" alt="Interbank Chart">
+                        <div style="font-size: 10px; color: #9CA3AF; margin-top: 5px; font-style: italic;">Source: State Bank of Vietnam (SBV), VN McWatch Analytics</div>
+                    </div>
+                    <!-- SIDEBAR CHỨA CÁC CHỈ SỐ NHANH -->
+                    <div class="data-sidebar">
+                        <div class="fact-box">
+                            <div class="fact-label">Latest ON Rate</div>
+                            <div class="fact-value">{{ ib_latest_rate|default('--') }}%</div>
+                        </div>
+                        <div class="fact-box">
+                            <div class="fact-label">Trading Volume</div>
+                            <div class="fact-value">{{ ib_latest_vol|default('--') }} Tỷ</div>
+                        </div>
+                        <div class="fact-box" style="border-left-color: var(--brand-accent);">
+                            <div class="fact-label">Trend Signal</div>
+                            <div class="fact-value text-gold" style="font-size: 16px;">{{ ib_trend|default('NEUTRAL') }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BÀI PHÂN TÍCH CHIA 2 CỘT NHƯ BÁO -->
+                <div class="analysis-two-col">
+                    {{ interbank_analysis }}
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="page-footer">
+                <div class="pf-left">
+                    <strong>Disclaimer:</strong> This report is prepared by VN McWatch's AI system for informational purposes only. It does not constitute investment advice. VN McWatch accepts no liability for any financial decisions made based on this report.
+                </div>
+                <div class="pf-right">PAGE 1</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NGẮT TRANG SANG TRANG 3 -->
+    <div class="page-break"></div>
+    
+    <!-- TRANG 3: OMO & YIELD CURVE -->
+    <div class="container internal-page">
+        <div class="watermark">VN MCWATCH</div>
+        <div class="content-over-watermark">
+            <div class="page-header">
+                <div class="ph-left"><div class="ph-logo">VN <span>McWatch</span></div></div>
+                <div class="ph-right">{{ report_date|default('14 MAY 2026') }} | MACRO RESEARCH</div>
+            </div>
+
+            <!-- OMO -->
+            <div class="complex-section">
+                <div class="sec-title-wrap">
+                    <div class="sec-number">02</div>
+                    <div class="sec-title">Nghiệp Vụ Thị Trường Mở (OMO)</div>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-area" style="width: 100%;">
+                        <img src="{{ omo_img }}" alt="OMO Chart">
+                        <div style="font-size: 10px; color: #9CA3AF; margin-top: 5px; font-style: italic;">Source: State Bank of Vietnam (SBV), VN McWatch Analytics</div>
+                    </div>
+                </div>
+                
+                <!-- PULL QUOTE LỚN LÀM ĐIỂM NHẤN -->
+                <div class="pull-quote">
+                    {{ omo_pull_quote|default('"Thanh khoản hệ thống đang được SBV điều tiết nhịp nhàng thông qua kênh cầm cố và tín phiếu."') }}
+                </div>
+                
+                <div class="analysis-two-col">
+                    {{ omo_analysis }}
+                </div>
+            </div>
+
+            <!-- YIELD CURVE -->
+            <div class="complex-section" style="margin-top: 80px;">
+                <div class="sec-title-wrap">
+                    <div class="sec-number">03</div>
+                    <div class="sec-title">Đường Cong Lợi Suất (Yield Curve)</div>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-area" style="width: 100%;">
+                        <img src="{{ yield_img }}" alt="Yield Curve Chart">
+                        <div style="font-size: 10px; color: #9CA3AF; margin-top: 5px; font-style: italic;">Source: SBV, US Treasury</div>
+                    </div>
+                </div>
+                <div class="analysis-two-col">
+                    {{ yield_analysis }}
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="page-footer">
+                <div class="pf-left"><strong>Disclaimer:</strong> This report is prepared by VN McWatch's AI system for informational purposes only.</div>
+                <div class="pf-right">PAGE 2</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NGẮT TRANG SANG TRANG 4 -->
+    <div class="page-break"></div>
+
+    <!-- TRANG 4: FX -->
+    <div class="container internal-page">
+        <div class="watermark">VN MCWATCH</div>
+        <div class="content-over-watermark">
+            <div class="page-header">
+                <div class="ph-left"><div class="ph-logo">VN <span>McWatch</span></div></div>
+                <div class="ph-right">{{ report_date|default('14 MAY 2026') }} | MACRO RESEARCH</div>
+            </div>
+
+            <!-- FX -->
+            <div class="complex-section">
+                <div class="sec-title-wrap">
+                    <div class="sec-number">04</div>
+                    <div class="sec-title">Tỷ Giá & Ngoại Hối (FX Market)</div>
+                </div>
+                <div class="chart-grid">
+                    <div class="chart-area">
+                        <img src="{{ fx_img }}" alt="FX Chart">
+                        <div style="font-size: 10px; color: #9CA3AF; margin-top: 5px; font-style: italic;">Source: SBV, Vietcombank, Investing.com</div>
+                    </div>
+                    <!-- FACTBOXES -->
+                    <div class="data-sidebar">
+                        <div class="fact-box">
+                            <div class="fact-label">Central Rate</div>
+                            <div class="fact-value">{{ fx_central|default('--') }}</div>
+                        </div>
+                        <div class="fact-box">
+                            <div class="fact-label">VCB Rate</div>
+                            <div class="fact-value">{{ fx_vcb|default('--') }}</div>
+                        </div>
+                        <div class="fact-box">
+                            <div class="fact-label">Black Market</div>
+                            <div class="fact-value">{{ fx_black|default('--') }}</div>
+                        </div>
+                        <div class="fact-box" style="border-left-color: var(--brand-accent);">
+                            <div class="fact-label">DXY Index</div>
+                            <div class="fact-value text-gold" style="font-size: 18px;">{{ fx_dxy|default('--') }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-two-col">
+                    {{ fx_analysis }}
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="page-footer">
+                <div class="pf-left"><strong>Disclaimer:</strong> This report is prepared by VN McWatch's AI system for informational purposes only.</div>
+                <div class="pf-right">PAGE 3</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

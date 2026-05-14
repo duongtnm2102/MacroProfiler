@@ -172,6 +172,10 @@ def plot_interbank(df_ib, start_date, end_date, show_legend=True):
             fig.add_trace(go.Bar(x=df1['Date_Str'], y=df1['Volume'], name='Volume', marker_color='rgba(0, 100, 255, 0.5)', showlegend=show_legend), secondary_y=False)
             fig.add_trace(go.Scatter(x=df1['Date_Str'], y=df1['Rate'], name='ON Rate', mode='lines', connectgaps=True, line=dict(color='#00FF00', width=2), showlegend=show_legend), secondary_y=True)
             
+            latest_row = df1.dropna(subset=['Rate']).iloc[-1] if not df1.dropna(subset=['Rate']).empty else None
+            if latest_row is not None:
+                fig.add_annotation(x=latest_row['Date_Str'], y=latest_row['Rate'], text=f"{latest_row['Rate']:.2f}%", showarrow=True, arrowhead=1, yref="y2", ax=-20, ay=-30, font=dict(color="#00FF00", size=12))
+            
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),
         legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
@@ -194,6 +198,10 @@ def plot_omo(df_omo, start_date, end_date, show_legend=True):
             df_out = df2.copy()
             df2['Date_Str'] = df2['Ngày'].dt.strftime('%d/%m/%Y')
             fig.add_trace(go.Scatter(x=df2['Date_Str'], y=df2['Cumulative'], mode='lines', name='Cumulative OMO', connectgaps=True, line=dict(color='#FF00FF', width=2), showlegend=show_legend))
+            
+            latest_row = df2.iloc[-1] if not df2.empty else None
+            if latest_row is not None:
+                fig.add_annotation(x=latest_row['Date_Str'], y=latest_row['Cumulative'], text=f"{latest_row['Cumulative']:,.0f}", showarrow=True, arrowhead=1, ax=-20, ay=-30, font=dict(color="#FF00FF", size=12))
             
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),
@@ -306,12 +314,20 @@ def plot_exchange_rate(df_fx, df_us_fx, start_date, end_date, show_legend=True):
             
             if 'USD_VND_Rate' in df_filter.columns:
                 fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['USD_VND_Rate'], mode='lines', name='Central Rate', connectgaps=True, line=dict(color='white'), showlegend=show_legend), secondary_y=False)
+                lr = df_filter.dropna(subset=['USD_VND_Rate']).iloc[-1] if not df_filter.dropna(subset=['USD_VND_Rate']).empty else None
+                if lr is not None: fig.add_annotation(x=lr['Date_Str'], y=lr['USD_VND_Rate'], text=f"{lr['USD_VND_Rate']:,.0f}", showarrow=True, arrowhead=1, ax=-30, ay=10, font=dict(color="white", size=11), yref="y1")
             if 'VCB_rate' in df_filter.columns:
                 fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['VCB_rate'], mode='lines', name='VCB Rate', connectgaps=True, line=dict(color='lime'), showlegend=show_legend), secondary_y=False)
+                lr = df_filter.dropna(subset=['VCB_rate']).iloc[-1] if not df_filter.dropna(subset=['VCB_rate']).empty else None
+                if lr is not None: fig.add_annotation(x=lr['Date_Str'], y=lr['VCB_rate'], text=f"{lr['VCB_rate']:,.0f}", showarrow=True, arrowhead=1, ax=-30, ay=-10, font=dict(color="lime", size=11), yref="y1")
             if 'Black_Market_rate' in df_filter.columns:
                 fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['Black_Market_rate'], mode='lines', name='Black Market', connectgaps=True, line=dict(color='red'), showlegend=show_legend), secondary_y=False)
+                lr = df_filter.dropna(subset=['Black_Market_rate']).iloc[-1] if not df_filter.dropna(subset=['Black_Market_rate']).empty else None
+                if lr is not None: fig.add_annotation(x=lr['Date_Str'], y=lr['Black_Market_rate'], text=f"{lr['Black_Market_rate']:,.0f}", showarrow=True, arrowhead=1, ax=10, ay=-30, font=dict(color="red", size=11), yref="y1")
             if 'DXY' in df_filter.columns:
                 fig.add_trace(go.Scatter(x=df_filter['Date_Str'], y=df_filter['DXY'], mode='lines', name='DXY', connectgaps=True, line=dict(color='orange', dash='dot'), showlegend=show_legend), secondary_y=True)
+                lr = df_filter.dropna(subset=['DXY']).iloc[-1] if not df_filter.dropna(subset=['DXY']).empty else None
+                if lr is not None: fig.add_annotation(x=lr['Date_Str'], y=lr['DXY'], text=f"{lr['DXY']:.2f}", showarrow=True, arrowhead=1, ax=10, ay=30, font=dict(color="orange", size=11), yref="y2")
                 
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0),

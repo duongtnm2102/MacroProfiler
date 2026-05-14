@@ -8,3 +8,6 @@ duckduckgo-search
 google-genai
 plotly
 streamlit-javascript
+kaleido==0.2.1
+pdfkit
+Jinja2
