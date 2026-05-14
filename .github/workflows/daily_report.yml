@@ -23,6 +23,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
+      - name: Install system dependencies for PDF generation
+        run: sudo apt-get update && sudo apt-get install -y wkhtmltopdf
+          
       - name: Run Report Generator Script
         env:
           # Các biến bảo mật sẽ được lấy từ GitHub Secrets
