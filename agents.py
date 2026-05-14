@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 # Load env variables (for local testing)
 load_dotenv()
 
-def call_gemini(system_msg, content, model="gemini-2.5-pro", use_google_search=False):
+def call_gemini(system_msg, content, model="gemini-3-flash-preview", use_google_search=False):
     """
     Hàm gọi API Gemini (Google AI Studio) có hỗ trợ Google Search Grounding.
     """
@@ -124,26 +124,26 @@ def analyze_chart_interbank(df_ib):
     if df_ib.empty: return "<p>Không có dữ liệu Liên ngân hàng.</p>"
     data_str = df_ib.to_csv(index=False)
     system_msg = build_chart_prompt("Thị trường Liên Ngân Hàng (Interbank) - Lãi suất & Khối lượng")
-    res = call_gemini(system_msg, data_str, model="gemini-2.5-pro", use_google_search=True)
+    res = call_gemini(system_msg, data_str, model="gemini-3-flash-preview", use_google_search=True)
     return clean_html(res)
 
 def analyze_chart_omo(df_omo):
     if df_omo.empty: return "<p>Không có dữ liệu OMO.</p>"
     data_str = df_omo.to_csv(index=False)
     system_msg = build_chart_prompt("Nghiệp vụ Thị trường mở (OMO) - Bơm/Hút thanh khoản")
-    res = call_gemini(system_msg, data_str, model="gemini-2.5-pro", use_google_search=True)
+    res = call_gemini(system_msg, data_str, model="gemini-3-flash-preview", use_google_search=True)
     return clean_html(res)
 
 def analyze_chart_yield(df_us_yc, df_vn_yc):
     s = "--- US YIELD CURVE ---\n" + (df_us_yc.to_csv(index=False) if not df_us_yc.empty else "No data")
     s += "\n--- VN YIELD CURVE ---\n" + (df_vn_yc.to_csv(index=False) if not df_vn_yc.empty else "No data")
     system_msg = build_chart_prompt("Đường cong Lợi suất (Yield Curve) Việt Nam và Mỹ")
-    res = call_gemini(system_msg, s, model="gemini-2.5-pro", use_google_search=True)
+    res = call_gemini(system_msg, s, model="gemini-3-flash-preview", use_google_search=True)
     return clean_html(res)
 
 def analyze_chart_fx(df_fx, df_us_fx):
     s = "--- TỶ GIÁ VN (Central, VCB, Black Market) ---\n" + (df_fx.to_csv(index=False) if not df_fx.empty else "No data")
     s += "\n--- CHỈ SỐ DXY (Mỹ) ---\n" + (df_us_fx.to_csv(index=False) if not df_us_fx.empty else "No data")
     system_msg = build_chart_prompt("Tỷ giá Ngoại hối (Exchange Rates) và Chỉ số DXY")
-    res = call_gemini(system_msg, s, model="gemini-2.5-pro", use_google_search=True)
+    res = call_gemini(system_msg, s, model="gemini-3-flash-preview", use_google_search=True)
     return clean_html(res)

@@ -46,7 +46,7 @@ def main():
     # Gọi hàm plot (lưu ý hàm plot trả về fig, has_data, ...)
     fig_ib, _, _, _ = app.plot_interbank(data_dict.get('SBV_Interbank_Rate'), start_date, end_date, show_legend=True)
     fig_omo, _, _ = app.plot_omo(data_dict.get('SBV_OMO'), start_date, end_date, show_legend=True)
-    fig_yc, _, _ = app.plot_yield_curve(data_dict.get('US_Yield_Curve'), data_dict.get('SBV_Yield_Curve'), show_legend=True)
+    fig_yc, _ = app.plot_yield_curve(data_dict.get('US_Yield_Curve'), data_dict.get('SBV_Yield_Curve'), show_legend=True)
     fig_fx, _, _ = app.plot_exchange_rate(data_dict.get('SBV_Exchange_Rate'), data_dict.get('US_Exchange_Rate'), start_date, end_date, show_legend=True)
     
     # Lưu ảnh bằng Kaleido
