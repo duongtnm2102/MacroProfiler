@@ -38,27 +38,32 @@
         .page-break { page-break-before: always; }
         .text-gold { color: var(--brand-accent); }
         
+        /* BẢNG BIỂU DÀNH CHO DỮ LIỆU MARKDOWN NẾU CÓ */
+        table { border-collapse: collapse; width: 100%; margin: 25px 0; font-size: 11px; table-layout: fixed; word-wrap: break-word; }
+        th, td { border: 1px solid #E5E7EB; padding: 6px 4px; text-align: left; vertical-align: top; }
+        th { background-color: #F4F7F6; font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; color: var(--brand-dark); text-transform: uppercase;}
+        
         .container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1300px;
             margin: 0 auto;
             position: relative;
         }
 
         /* --- COVER PAGE --- */
         .cover-page {
-            height: 1050px; /* Chiều cao chuẩn 1 trang A4 */
+            height: 740px; /* Chiều cao chuẩn 1 trang A4 khổ ngang (Landscape) */
             position: relative;
             background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-primary) 100%);
             color: white;
-            padding: 60px 50px;
+            padding: 50px 50px;
             box-sizing: border-box;
             border: 15px solid var(--brand-accent);
         }
         .cover-top {
             border-bottom: 1px solid rgba(255,255,255,0.2);
             padding-bottom: 20px;
-            margin-bottom: 80px;
+            margin-bottom: 50px;
         }
         .cover-logo {
             font-size: 38px;
@@ -78,7 +83,7 @@
         }
         
         .cover-title-area {
-            margin-top: 100px;
+            margin-top: 30px;
             border-left: 8px solid var(--brand-accent);
             padding-left: 30px;
         }

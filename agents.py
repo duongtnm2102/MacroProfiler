@@ -4,15 +4,15 @@ from dotenv import load_dotenv
 # Load env variables (for local testing)
 load_dotenv()
 
-def call_gemini(system_msg, content, model="gemini-3-flash-preview", use_google_search=False):
+def call_gemini(system_msg, content, model="gemini-3-flash-preview", use_google_search=False, api_key_name="GEMINI_API_KEY_1"):
     """
     Hàm gọi API Gemini (Google AI Studio) có hỗ trợ Google Search Grounding.
     """
     try:
         from google import genai
         from google.genai import types
-        # Khởi tạo client, tự động lấy GEMINI_API_KEY từ biến môi trường
-        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+        # Khởi tạo client, tự động lấy API KEY từ tên biến môi trường
+        client = genai.Client(api_key=os.environ.get(api_key_name))
         
         # Gộp chung System Prompt và User Content
         full_prompt = f"--- LỆNH HỆ THỐNG ---\n{system_msg}\n\n--- DỮ LIỆU ĐẦU VÀO ---\n{content}"
@@ -23,6 +23,7 @@ def call_gemini(system_msg, content, model="gemini-3-flash-preview", use_google_
                 temperature=0.4
             )
             response = client.models.generate_content(model=model, contents=full_prompt, config=config)
+
         else:
             response = client.models.generate_content(model=model, contents=full_prompt)
             
@@ -101,8 +102,8 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc. TU
     search_context = get_search_context()
     full_context = f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n{search_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."
     
-    # Sử dụng bộ não siêu khủng Gemini 3 Flash Preview cho việc làm Báo cáo Vĩ mô
-    return call_gemini(system_msg, full_context, model="gemini-3-flash-preview")
+    # Sử dụng bộ não siêu khủng Gemini 3 Flash Preview cho việc làm Báo cáo Vĩ mô (Key 1)
+    return call_gemini(system_msg, full_context, model="gemini-3-flash-preview", api_key_name="GEMINI_API_KEY_1")
 
 def build_chart_prompt(chart_name):
     return f"""Bạn là Chuyên gia Kinh tế Vĩ mô cấp cao (Chief Economist) của VN McWatch.
@@ -124,26 +125,26 @@ def analyze_chart_interbank(df_ib):
     if df_ib.empty: return "<p>Không có dữ liệu Liên ngân hàng.</p>"
     data_str = df_ib.to_csv(index=False)
     system_msg = build_chart_prompt("Thị trường Liên Ngân Hàng (Interbank) - Lãi suất & Khối lượng")
-    res = call_gemini(system_msg, data_str, model="gemini-3-flash-preview", use_google_search=True)
+    res = call_gemini(system_msg, data_str, model="gemini-3-flash-preview", use_google_search=True, api_key_name="GEMINI_API_KEY_2")
     return clean_html(res)
 
 def analyze_chart_omo(df_omo):
     if df_omo.empty: return "<p>Không có dữ liệu OMO.</p>"
     data_str = df_omo.to_csv(index=False)
     system_msg = build_chart_prompt("Nghiệp vụ Thị trường mở (OMO) - Bơm/Hút thanh khoản")
-    res = call_gemini(system_msg, data_str, model="gemini-3-flash-preview", use_google_search=True)
+    res = call_gemini(system_msg, data_str, model="gemini-3-flash-preview", use_google_search=True, api_key_name="GEMINI_API_KEY_3")
     return clean_html(res)
 
 def analyze_chart_yield(df_us_yc, df_vn_yc):
     s = "--- US YIELD CURVE ---\n" + (df_us_yc.to_csv(index=False) if not df_us_yc.empty else "No data")
     s += "\n--- VN YIELD CURVE ---\n" + (df_vn_yc.to_csv(index=False) if not df_vn_yc.empty else "No data")
     system_msg = build_chart_prompt("Đường cong Lợi suất (Yield Curve) Việt Nam và Mỹ")
-    res = call_gemini(system_msg, s, model="gemini-3-flash-preview", use_google_search=True)
+    res = call_gemini(system_msg, s, model="gemini-3-flash-preview", use_google_search=True, api_key_name="GEMINI_API_KEY_4")
     return clean_html(res)
 
 def analyze_chart_fx(df_fx, df_us_fx):
     s = "--- TỶ GIÁ VN (Central, VCB, Black Market) ---\n" + (df_fx.to_csv(index=False) if not df_fx.empty else "No data")
     s += "\n--- CHỈ SỐ DXY (Mỹ) ---\n" + (df_us_fx.to_csv(index=False) if not df_us_fx.empty else "No data")
     system_msg = build_chart_prompt("Tỷ giá Ngoại hối (Exchange Rates) và Chỉ số DXY")
-    res = call_gemini(system_msg, s, model="gemini-3-flash-preview", use_google_search=True)
+    res = call_gemini(system_msg, s, model="gemini-3-flash-preview", use_google_search=True, api_key_name="GEMINI_API_KEY_5")
     return clean_html(res)
