@@ -34,28 +34,9 @@ def call_gemini(system_msg, content, model="gemini-3-flash-preview", use_google_
 
 def get_search_context():
     """
-    Dùng thư viện duckduckgo_search để lấy thông tin mới nhất từ internet.
-    Hỗ trợ cho AI không có quyền truy cập internet (để không bịa data).
+    Sử dụng Google Search Grounding tích hợp sẵn của Gemini thay vì DuckDuckGo để tránh lỗi treo máy.
     """
-    try:
-        from duckduckgo_search import DDGS
-        ddgs = DDGS()
-        queries = [
-            "Chỉ đạo tín dụng ngân hàng nhà nước thủ tướng mới nhất", 
-            "US CPI YoY inflation rate latest", 
-            "Federal Reserve FOMC minutes latest"
-        ]
-        search_text = "\n--- THÔNG TIN CẬP NHẬT TỪ INTERNET (DÙNG ĐỂ PHÂN TÍCH SOFT DATA) ---\n"
-        search_text += "Lưu ý: TUYỆT ĐỐI dùng thông tin dưới đây để viết báo cáo. NẾU KHÔNG CÓ, HÃY GHI LÀ 'KHÔNG CÓ THÔNG TIN', CẤM BỊA ĐẶT PHÁT BIỂU CHÍNH TRỊ.\n\n"
-        
-        for q in queries:
-            search_text += f"Kết quả tìm kiếm cho '{q}':\n"
-            results = ddgs.text(q, max_results=2)
-            for r in results:
-                search_text += f"- {r.get('title', '')}: {r.get('body', '')}\n"
-        return search_text
-    except Exception as e:
-        return f"\n--- THÔNG TIN INTERNET ---\nKhông thể truy cập internet. Tác vụ tính Real Rate hãy dùng CPI = 2.4%. Về chính trị: Xin ghi 'Không có dữ liệu mới cập nhật', tuyệt đối không tự bịa.\n"
+    return "\n--- LƯU Ý KHI PHÂN TÍCH CHÍNH TRỊ & KINH TẾ QUỐC TẾ ---\nHÃY SỬ DỤNG GOOGLE SEARCH ĐỂ TÌM KIẾM CÁC THÔNG TIN SAU TRƯỚC KHI VIẾT BÁO CÁO:\n1. Chỉ đạo tín dụng của Ngân hàng Nhà nước hoặc Thủ tướng mới nhất.\n2. Tỷ lệ lạm phát US CPI YoY mới nhất.\n3. Biên bản họp FOMC của Federal Reserve mới nhất.\nTuyệt đối không bịa đặt số liệu hoặc phát biểu nếu không tìm thấy."
 
 def data_analyst_agent(chat_history_text):
     """
@@ -103,7 +84,7 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc. TU
     full_context = f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n{search_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."
     
     # Sử dụng bộ não siêu khủng Gemini 3 Flash Preview cho việc làm Báo cáo Vĩ mô (Key 1)
-    return call_gemini(system_msg, full_context, model="gemini-3-flash-preview", api_key_name="GEMINI_API_KEY_1")
+    return call_gemini(system_msg, full_context, model="gemini-3-flash-preview", api_key_name="GEMINI_API_KEY_1", use_google_search=True)
 
 def build_chart_prompt(chart_name):
     return f"""Bạn là Chuyên gia Kinh tế Vĩ mô cấp cao (Chief Economist) của VN McWatch.

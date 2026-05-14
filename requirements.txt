@@ -4,7 +4,6 @@ matplotlib
 python-dotenv==1.0.1
 requests
 markdown
-duckduckgo-search
 google-genai
 plotly
 streamlit-javascript
