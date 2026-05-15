@@ -52,7 +52,10 @@
 
         /* --- COVER PAGE --- */
         .cover-page {
-            height: 740px; /* Chiều cao chuẩn 1 trang A4 khổ ngang (Landscape) */
+            height: 210mm; /* Chiều cao chuẩn 1 trang A4 khổ ngang */
+            width: 297mm;  /* Chiều rộng chuẩn 1 trang A4 khổ ngang */
+            max-width: none;
+            margin: 0;
             position: relative;
             background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-primary) 100%);
             color: white;
@@ -193,6 +196,7 @@
 
         /* SECTION COMPLEX */
         .complex-section {
+            page-break-before: always;
             margin-bottom: 60px;
         }
         .sec-title-wrap {

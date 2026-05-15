@@ -34,9 +34,15 @@ def call_gemini(system_msg, content, model="gemini-3-flash-preview", use_google_
 
 def get_search_context():
     """
-    Sử dụng Google Search Grounding tích hợp sẵn của Gemini thay vì DuckDuckGo để tránh lỗi treo máy.
+    Sử dụng Google Search Grounding tách biệt thông qua model gemini-2.5-pro để lấy thông tin.
     """
-    return "\n--- LƯU Ý KHI PHÂN TÍCH CHÍNH TRỊ & KINH TẾ QUỐC TẾ ---\nHÃY SỬ DỤNG GOOGLE SEARCH ĐỂ TÌM KIẾM CÁC THÔNG TIN SAU TRƯỚC KHI VIẾT BÁO CÁO:\n1. Chỉ đạo tín dụng của Ngân hàng Nhà nước hoặc Thủ tướng mới nhất.\n2. Tỷ lệ lạm phát US CPI YoY mới nhất.\n3. Biên bản họp FOMC của Federal Reserve mới nhất.\nTuyệt đối không bịa đặt số liệu hoặc phát biểu nếu không tìm thấy."
+    system_msg = "Bạn là trợ lý tìm kiếm thông tin Vĩ mô chuyên nghiệp."
+    prompt = """HÃY SỬ DỤNG GOOGLE SEARCH ĐỂ TÌM KIẾM VÀ TÓM TẮT NGẮN GỌN CÁC THÔNG TIN SAU (CHỈ LẤY THÔNG TIN MỚI NHẤT):
+1. Chỉ đạo tín dụng của Ngân hàng Nhà nước hoặc Thủ tướng mới nhất.
+2. Tỷ lệ lạm phát US CPI YoY mới nhất.
+3. Biên bản họp FOMC của Federal Reserve mới nhất.
+Tuyệt đối không bịa đặt số liệu hoặc phát biểu nếu không tìm thấy."""
+    return call_gemini(system_msg, prompt, model="gemini-2.5-pro", use_google_search=True, api_key_name="GEMINI_API_KEY_1")
 
 def data_analyst_agent(chat_history_text):
     """
@@ -81,17 +87,25 @@ BÁO CÁO PHẢI TUÂN THỦ NGHIÊM NGẶT FORMAT VÀ NỘI DUNG ĐƯỢC YÊU 
 Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc. TUYỆT ĐỐI KHÔNG bịa đặt trích dẫn chính trị.
 """
     search_context = get_search_context()
-    full_context = f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n{search_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."
+    full_context = f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n\n--- KẾT QUẢ TÌM KIẾM INTERNET ---\n{search_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."
     
-    # Sử dụng bộ não siêu khủng Gemini 3 Flash Preview cho việc làm Báo cáo Vĩ mô (Key 1)
-    return call_gemini(system_msg, full_context, model="gemini-3-flash-preview", api_key_name="GEMINI_API_KEY_1", use_google_search=True)
+    # Sử dụng bộ não siêu khủng Gemini 3.0 Flash cho việc làm Báo cáo Vĩ mô (Key 1)
+    return call_gemini(system_msg, full_context, model="gemini-3.0-flash", api_key_name="GEMINI_API_KEY_1", use_google_search=False)
 
-def build_chart_prompt(chart_name):
+def get_crisis_search_context(chart_name, api_key_name):
+    system_msg = "Bạn là trợ lý tìm kiếm dữ kiện lịch sử kinh tế."
+    prompt = f"Hãy sử dụng Google Search để tìm và liệt kê nhanh các sự kiện khủng hoảng kinh tế toàn cầu và Việt Nam trong quá khứ có tác động mạnh đến {chart_name}. Chỉ nêu tên sự kiện, thời gian diễn ra và lý do ngắn gọn."
+    return call_gemini(system_msg, prompt, model="gemini-2.5-pro", use_google_search=True, api_key_name=api_key_name)
+
+def build_chart_prompt(chart_name, crisis_context):
     return f"""Bạn là Chuyên gia Kinh tế Vĩ mô cấp cao (Chief Economist) của VN McWatch.
 Dưới đây là bộ dữ liệu lịch sử hoàn chỉnh của {chart_name}, xuất từ ngày xa nhất có thể.
 NHIỆM VỤ CỦA BẠN:
 1. So sánh đặc điểm, xu hướng, và mặt bằng số liệu của 2 thời kỳ: TRƯỚC năm 2025 và TỪ NĂM 2025 ĐẾN NAY.
-2. NGHIÊN CỨU KHỦNG HOẢNG: Nhận diện các "đỉnh" (peaks) biến động mạnh nhất. BẮT BUỘC SỬ DỤNG TÌM KIẾM GOOGLE để đối chiếu thời gian các đỉnh này với các cuộc khủng hoảng/biến động kinh tế toàn cầu & Việt Nam (Ví dụ: Covid-19, Fed tăng lãi suất 2022...). Phân tích nguyên nhân đằng sau các đỉnh đó.
+2. NGHIÊN CỨU KHỦNG HOẢNG: Nhận diện các "đỉnh" (peaks) biến động mạnh nhất. Dựa vào Bối cảnh Khủng hoảng dưới đây để đối chiếu thời gian các đỉnh này với các sự kiện kinh tế:
+--- BỐI CẢNH KHỦNG HOẢNG ---
+{crisis_context}
+---
 3. Trình bày trực tiếp bằng HTML tĩnh (chỉ dùng <p>, <ul>, <li>, <strong>, <em>, <h3>, <h4>). KHÔNG dùng markdown. KHÔNG có thẻ bọc ```html. Báo cáo cần mang giọng văn của các tổ chức tài chính Phố Wall.
 """
 
@@ -104,28 +118,32 @@ def clean_html(text):
 
 def analyze_chart_interbank(df_ib):
     if df_ib.empty: return "<p>Không có dữ liệu Liên ngân hàng.</p>"
+    crisis_ctx = get_crisis_search_context("Thị trường Liên Ngân Hàng", "GEMINI_API_KEY_2")
     data_str = df_ib.to_csv(index=False)
-    system_msg = build_chart_prompt("Thị trường Liên Ngân Hàng (Interbank) - Lãi suất & Khối lượng")
-    res = call_gemini(system_msg, data_str, model="gemini-2.5-flash", use_google_search=True, api_key_name="GEMINI_API_KEY_2")
+    system_msg = build_chart_prompt("Thị trường Liên Ngân Hàng (Interbank) - Lãi suất & Khối lượng", crisis_ctx)
+    res = call_gemini(system_msg, data_str, model="gemini-2.5-pro", use_google_search=False, api_key_name="GEMINI_API_KEY_2")
     return clean_html(res)
 
 def analyze_chart_omo(df_omo):
     if df_omo.empty: return "<p>Không có dữ liệu OMO.</p>"
+    crisis_ctx = get_crisis_search_context("Nghiệp vụ Thị trường mở (OMO)", "GEMINI_API_KEY_3")
     data_str = df_omo.to_csv(index=False)
-    system_msg = build_chart_prompt("Nghiệp vụ Thị trường mở (OMO) - Bơm/Hút thanh khoản")
-    res = call_gemini(system_msg, data_str, model="gemini-2.5-flash", use_google_search=True, api_key_name="GEMINI_API_KEY_3")
+    system_msg = build_chart_prompt("Nghiệp vụ Thị trường mở (OMO) - Bơm/Hút thanh khoản", crisis_ctx)
+    res = call_gemini(system_msg, data_str, model="gemini-2.5-pro", use_google_search=False, api_key_name="GEMINI_API_KEY_3")
     return clean_html(res)
 
 def analyze_chart_yield(df_us_yc, df_vn_yc):
+    crisis_ctx = get_crisis_search_context("Đường cong Lợi suất (Yield Curve) Việt Nam và Mỹ", "GEMINI_API_KEY_4")
     s = "--- US YIELD CURVE ---\n" + (df_us_yc.to_csv(index=False) if not df_us_yc.empty else "No data")
     s += "\n--- VN YIELD CURVE ---\n" + (df_vn_yc.to_csv(index=False) if not df_vn_yc.empty else "No data")
-    system_msg = build_chart_prompt("Đường cong Lợi suất (Yield Curve) Việt Nam và Mỹ")
-    res = call_gemini(system_msg, s, model="gemini-2.5-flash", use_google_search=True, api_key_name="GEMINI_API_KEY_4")
+    system_msg = build_chart_prompt("Đường cong Lợi suất (Yield Curve) Việt Nam và Mỹ", crisis_ctx)
+    res = call_gemini(system_msg, s, model="gemini-2.5-pro", use_google_search=False, api_key_name="GEMINI_API_KEY_4")
     return clean_html(res)
 
 def analyze_chart_fx(df_fx, df_us_fx):
+    crisis_ctx = get_crisis_search_context("Tỷ giá Ngoại hối (Exchange Rates) và Chỉ số DXY", "GEMINI_API_KEY_5")
     s = "--- TỶ GIÁ VN (Central, VCB, Black Market) ---\n" + (df_fx.to_csv(index=False) if not df_fx.empty else "No data")
     s += "\n--- CHỈ SỐ DXY (Mỹ) ---\n" + (df_us_fx.to_csv(index=False) if not df_us_fx.empty else "No data")
-    system_msg = build_chart_prompt("Tỷ giá Ngoại hối (Exchange Rates) và Chỉ số DXY")
-    res = call_gemini(system_msg, s, model="gemini-2.5-flash", use_google_search=True, api_key_name="GEMINI_API_KEY_5")
+    system_msg = build_chart_prompt("Tỷ giá Ngoại hối (Exchange Rates) và Chỉ số DXY", crisis_ctx)
+    res = call_gemini(system_msg, s, model="gemini-2.5-pro", use_google_search=False, api_key_name="GEMINI_API_KEY_5")
     return clean_html(res)

@@ -68,7 +68,10 @@ def main():
     df_ib = data_dict.get('SBV_Interbank_Rate')
     if df_ib is not None and not df_ib.empty:
         try:
-            df_ib_clean = df_ib[df_ib['Rate'].astype(str).str.replace(',', '').apply(pd.to_numeric, errors='coerce') > 0]
+            # Lọc riêng kỳ hạn Qua đêm cho Factbox
+            on_mask = df_ib['Term'].astype(str).str.contains('Qua đêm|ON|O/N|OVERNIGHT', na=False, case=False, regex=True)
+            df_ib_clean = df_ib[on_mask].copy()
+            df_ib_clean = df_ib_clean[df_ib_clean['Rate'].astype(str).str.replace(',', '').apply(pd.to_numeric, errors='coerce') > 0]
             if not df_ib_clean.empty:
                 ib_rate = f"{df_ib_clean.iloc[-1]['Rate']}"
                 ib_vol = f"{df_ib_clean.iloc[-1]['Volume']}"
