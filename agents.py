@@ -88,9 +88,8 @@ Hãy sử dụng Markdown để trình bày báo cáo rõ ràng, dễ đọc. TU
 """
     search_context = get_search_context()
     full_context = f"Đây là số liệu thô và thống kê mới nhất được lấy từ cơ sở dữ liệu:\n{data_context}\n\n--- KẾT QUẢ TÌM KIẾM INTERNET ---\n{search_context}\n\nHãy viết bản báo cáo vĩ mô đầy đủ theo đúng hướng dẫn."
-    
-    # Sử dụng bộ não siêu khủng Gemini 3.0 Flash cho việc làm Báo cáo Vĩ mô (Key 1)
-    return call_gemini(system_msg, full_context, model="gemini-3.0-flash", api_key_name="GEMINI_API_KEY_1", use_google_search=False)
+    # Sử dụng bộ não siêu khủng Gemini 2.5 Pro cho việc làm Báo cáo Vĩ mô (Key 1)
+    return call_gemini(system_msg, full_context, model="gemini-2.5-pro", api_key_name="GEMINI_API_KEY_1", use_google_search=False)
 
 def get_crisis_search_context(chart_name, api_key_name):
     system_msg = "Bạn là trợ lý tìm kiếm dữ kiện lịch sử kinh tế."
@@ -119,6 +118,11 @@ def clean_html(text):
 def analyze_chart_interbank(df_ib):
     if df_ib.empty: return "<p>Không có dữ liệu Liên ngân hàng.</p>"
     crisis_ctx = get_crisis_search_context("Thị trường Liên Ngân Hàng", "GEMINI_API_KEY_2")
+    
+    import time
+    print("Nghỉ 35s để tránh lỗi 429 (Key 2)...")
+    time.sleep(35)
+    
     data_str = df_ib.to_csv(index=False)
     system_msg = build_chart_prompt("Thị trường Liên Ngân Hàng (Interbank) - Lãi suất & Khối lượng", crisis_ctx)
     res = call_gemini(system_msg, data_str, model="gemini-2.5-pro", use_google_search=False, api_key_name="GEMINI_API_KEY_2")
@@ -127,6 +131,11 @@ def analyze_chart_interbank(df_ib):
 def analyze_chart_omo(df_omo):
     if df_omo.empty: return "<p>Không có dữ liệu OMO.</p>"
     crisis_ctx = get_crisis_search_context("Nghiệp vụ Thị trường mở (OMO)", "GEMINI_API_KEY_3")
+    
+    import time
+    print("Nghỉ 35s để tránh lỗi 429 (Key 3)...")
+    time.sleep(35)
+    
     data_str = df_omo.to_csv(index=False)
     system_msg = build_chart_prompt("Nghiệp vụ Thị trường mở (OMO) - Bơm/Hút thanh khoản", crisis_ctx)
     res = call_gemini(system_msg, data_str, model="gemini-2.5-pro", use_google_search=False, api_key_name="GEMINI_API_KEY_3")
@@ -134,6 +143,11 @@ def analyze_chart_omo(df_omo):
 
 def analyze_chart_yield(df_us_yc, df_vn_yc):
     crisis_ctx = get_crisis_search_context("Đường cong Lợi suất (Yield Curve) Việt Nam và Mỹ", "GEMINI_API_KEY_4")
+    
+    import time
+    print("Nghỉ 35s để tránh lỗi 429 (Key 4)...")
+    time.sleep(35)
+    
     s = "--- US YIELD CURVE ---\n" + (df_us_yc.to_csv(index=False) if not df_us_yc.empty else "No data")
     s += "\n--- VN YIELD CURVE ---\n" + (df_vn_yc.to_csv(index=False) if not df_vn_yc.empty else "No data")
     system_msg = build_chart_prompt("Đường cong Lợi suất (Yield Curve) Việt Nam và Mỹ", crisis_ctx)
@@ -142,6 +156,11 @@ def analyze_chart_yield(df_us_yc, df_vn_yc):
 
 def analyze_chart_fx(df_fx, df_us_fx):
     crisis_ctx = get_crisis_search_context("Tỷ giá Ngoại hối (Exchange Rates) và Chỉ số DXY", "GEMINI_API_KEY_5")
+    
+    import time
+    print("Nghỉ 35s để tránh lỗi 429 (Key 5)...")
+    time.sleep(35)
+    
     s = "--- TỶ GIÁ VN (Central, VCB, Black Market) ---\n" + (df_fx.to_csv(index=False) if not df_fx.empty else "No data")
     s += "\n--- CHỈ SỐ DXY (Mỹ) ---\n" + (df_us_fx.to_csv(index=False) if not df_us_fx.empty else "No data")
     system_msg = build_chart_prompt("Tỷ giá Ngoại hối (Exchange Rates) và Chỉ số DXY", crisis_ctx)
