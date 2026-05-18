@@ -262,7 +262,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
 
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title,
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+        legend=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
@@ -352,7 +352,7 @@ def plot_yield_curve_historical(df_us_yc, df_vn_yc, target_date=None, region="Cá
 
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title,
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+        legend=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
