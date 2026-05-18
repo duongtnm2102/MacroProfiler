@@ -262,7 +262,7 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
 
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title,
-        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
@@ -285,18 +285,16 @@ def plot_yield_curve_historical(df_us_yc, df_vn_yc, target_date=None, region="C�
         return df[df[date_col] == closest_date]
 
     line_styles = [
-        dict(dash='solid', width=3, opacity=1.0),
         dict(dash='dash', width=2, opacity=0.8),
         dict(dash='dot', width=2, opacity=0.6),
         dict(dash='dashdot', width=2, opacity=0.4),
     ]
-    labels = ["Hôm nay", "1 Tuần trước", "1 Tháng trước", "1 Năm trước"]
+    labels = ["1 Tuần trước", "1 Tháng trước", "1 Năm trước"]
     
     if target_date is None:
         target_date = pd.to_datetime('today')
     
     dates_to_plot = [
-        target_date,
         target_date - pd.Timedelta(days=7),
         target_date - pd.Timedelta(days=30),
         target_date - pd.Timedelta(days=365)
@@ -348,7 +346,7 @@ def plot_yield_curve_historical(df_us_yc, df_vn_yc, target_date=None, region="C�
 
     fig.update_layout(
         template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title,
-        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
     )
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
@@ -555,10 +553,21 @@ with tab_dash:
             tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
             
             with tab_latest:
-                col_left, col_right = st.columns([1.2, 1])
+                # Lấy ngày mới nhất
+                latest_date_str = ""
+                if not df_us_yc.empty and not df_vn_yc.empty:
+                    max_date = max(pd.to_datetime(df_us_yc['Date']).max(), pd.to_datetime(df_vn_yc['Date']).max())
+                    latest_date_str = max_date.strftime('%d/%m/%Y')
+                elif not df_us_yc.empty:
+                    latest_date_str = pd.to_datetime(df_us_yc['Date']).max().strftime('%d/%m/%Y')
+                elif not df_vn_yc.empty:
+                    latest_date_str = pd.to_datetime(df_vn_yc['Date']).max().strftime('%d/%m/%Y')
+
+                region_choice = st.radio("Hiển thị Quốc gia (Biểu đồ Lịch sử):", ["Cả hai", "Việt Nam", "Mỹ"], horizontal=True, key="yc_region_radio")
+                
+                col_left, col_right = st.columns(2)
                 with col_left:
                     st.markdown("**Biểu đồ Snapshot Lịch sử (Bóng ma)**")
-                    region_choice = st.radio("Hiển thị Quốc gia:", ["Cả hai", "Việt Nam", "Mỹ"], horizontal=True, key="yc_region_radio")
                     fig_hist, has_hist = plot_yield_curve_historical(df_us_yc, df_vn_yc, region=region_choice, title="")
                     if has_hist:
                         st.plotly_chart(fig_hist, width="stretch", key="yc_hist_chart")
@@ -566,8 +575,7 @@ with tab_dash:
                         st.info("Không có dữ liệu Lịch sử.")
 
                 with col_right:
-                    st.markdown("**Snapshot Ngày Gần Nhất**")
-                    st.markdown("<br>", unsafe_allow_html=True) # Tạo khoảng trống để thẳng hàng với radio button
+                    st.markdown(f"**Snapshot ({latest_date_str})**")
                     fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
                     if has_data3:
                         st.plotly_chart(fig3, width="stretch", key="yc_single_chart")
