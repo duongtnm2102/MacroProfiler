@@ -556,12 +556,12 @@ with tab_dash:
                 # Lấy ngày mới nhất
                 latest_date_str = ""
                 if not df_us_yc.empty and not df_vn_yc.empty:
-                    max_date = max(pd.to_datetime(df_us_yc['Date']).max(), pd.to_datetime(df_vn_yc['Date']).max())
+                    max_date = max(safe_to_datetime(df_us_yc['Date']).max(), safe_to_datetime(df_vn_yc['Date']).max())
                     latest_date_str = max_date.strftime('%d/%m/%Y')
                 elif not df_us_yc.empty:
-                    latest_date_str = pd.to_datetime(df_us_yc['Date']).max().strftime('%d/%m/%Y')
+                    latest_date_str = safe_to_datetime(df_us_yc['Date']).max().strftime('%d/%m/%Y')
                 elif not df_vn_yc.empty:
-                    latest_date_str = pd.to_datetime(df_vn_yc['Date']).max().strftime('%d/%m/%Y')
+                    latest_date_str = safe_to_datetime(df_vn_yc['Date']).max().strftime('%d/%m/%Y')
 
                 region_choice = st.radio("Hiển thị Quốc gia (Biểu đồ Lịch sử):", ["Cả hai", "Việt Nam", "Mỹ"], horizontal=True, key="yc_region_radio")
                 
