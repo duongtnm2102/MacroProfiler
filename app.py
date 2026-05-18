@@ -267,6 +267,92 @@ def plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="Yield Curve", 
     fig.update_xaxes(categoryorder='array', categoryarray=std_order)
     return fig, has_data
 
+def plot_yield_curve_historical(df_us_yc, df_vn_yc, target_date=None, region="Cả hai", title="", show_legend=True):
+    fig = go.Figure()
+    vn_term_map = {
+        '1 tháng': '1M', '3 tháng': '3M', '6 tháng': '6M', '9 tháng': '9M',
+        '1 năm': '1Y', '2 năm': '2Y', '3 năm': '3Y', '5 năm': '5Y',
+        '7 năm': '7Y', '10 năm': '10Y', '15 năm': '15Y', '20 năm': '20Y', '30 năm': '30Y'
+    }
+    std_order = ['1M', '3M', '6M', '9M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y']
+    has_data = False
+    
+    def get_closest_date_df(df, date_col, target_dt):
+        if df.empty: return pd.DataFrame()
+        df_past = df[df[date_col] <= target_dt]
+        if df_past.empty: return pd.DataFrame()
+        closest_date = df_past[date_col].max()
+        return df[df[date_col] == closest_date]
+
+    line_styles = [
+        dict(dash='solid', width=3, opacity=1.0),
+        dict(dash='dash', width=2, opacity=0.8),
+        dict(dash='dot', width=2, opacity=0.6),
+        dict(dash='dashdot', width=2, opacity=0.4),
+    ]
+    labels = ["Hôm nay", "1 Tuần trước", "1 Tháng trước", "1 Năm trước"]
+    
+    if target_date is None:
+        target_date = pd.to_datetime('today')
+    
+    dates_to_plot = [
+        target_date,
+        target_date - pd.Timedelta(days=7),
+        target_date - pd.Timedelta(days=30),
+        target_date - pd.Timedelta(days=365)
+    ]
+
+    # Plot US
+    if region in ["Cả hai", "Mỹ"] and not df_us_yc.empty:
+        df3_us = df_us_yc.copy()
+        df3_us['Date'] = safe_to_datetime(df3_us['Date'])
+        for idx, dt in enumerate(dates_to_plot):
+            df_closest = get_closest_date_df(df3_us, 'Date', dt)
+            if not df_closest.empty:
+                has_data = True
+                latest_us = df_closest.iloc[0]
+                terms_us_avail = [t for t in std_order if t in latest_us.index]
+                rates_us = [pd.to_numeric(latest_us[t], errors='coerce') for t in terms_us_avail]
+                fig.add_trace(go.Scatter(
+                    x=terms_us_avail, y=rates_us, mode='lines+markers', 
+                    name=f'US {labels[idx]}', showlegend=show_legend,
+                    line=dict(color='#00FFFF', dash=line_styles[idx]['dash'], width=line_styles[idx]['width']),
+                    opacity=line_styles[idx]['opacity']
+                ))
+
+    # Plot VN
+    if region in ["Cả hai", "Việt Nam"] and not df_vn_yc.empty:
+        df3_vn = df_vn_yc.copy()
+        df3_vn['Date'] = safe_to_datetime(df3_vn['Date'])
+        for idx, dt in enumerate(dates_to_plot):
+            df_closest = get_closest_date_df(df3_vn, 'Date', dt)
+            if not df_closest.empty:
+                has_data = True
+                terms_vn_raw = df_closest['Term'].astype(str).str.strip().str.lower().tolist()
+                terms_vn_mapped = [vn_term_map.get(t, t.upper()) for t in terms_vn_raw]
+                
+                if 'Spot_Rate_Annual_Pct' in df_closest.columns:
+                    rates_vn = pd.to_numeric(df_closest['Spot_Rate_Annual_Pct'].astype(str).str.replace(',', ''), errors='coerce').tolist()
+                elif 'Par_Yield_Pct' in df_closest.columns:
+                    rates_vn = pd.to_numeric(df_closest['Par_Yield_Pct'].astype(str).str.replace(',', ''), errors='coerce').tolist()
+                else:
+                    rates_vn = []
+                    
+                if rates_vn:
+                    fig.add_trace(go.Scatter(
+                        x=terms_vn_mapped, y=rates_vn, mode='lines+markers', 
+                        name=f'VN {labels[idx]}', showlegend=show_legend,
+                        line=dict(color='#FFFF00', dash=line_styles[idx]['dash'], width=line_styles[idx]['width']),
+                        opacity=line_styles[idx]['opacity']
+                    ))
+
+    fig.update_layout(
+        template='plotly_dark', plot_bgcolor='#000000', paper_bgcolor='#000000', margin=dict(l=0, r=0, t=30, b=0), title=title,
+        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(0,0,0,0.5)") if show_legend else None
+    )
+    fig.update_xaxes(categoryorder='array', categoryarray=std_order)
+    return fig, has_data
+
 def plot_exchange_rate(df_fx, df_us_fx, start_date, end_date, show_legend=True):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     has_data = False
@@ -337,8 +423,13 @@ def plot_exchange_rate(df_fx, df_us_fx, start_date, end_date, show_legend=True):
     return fig, has_data, df_out
 
 # --- ĐO KÍCH THƯỚC MÀN HÌNH ĐỂ NHẬN DIỆN MOBILE ---
-ui_width = st_javascript("window.innerWidth")
-is_mobile = ui_width > 0 and ui_width <= 768
+is_mobile = False
+if __name__ == '__main__':
+    try:
+        ui_width = st_javascript("window.innerWidth")
+        is_mobile = ui_width > 0 and ui_width <= 768
+    except:
+        pass
 
 tab_dash, tab_chat = st.tabs(["📺 DASHBOARD MẶC ĐỊNH", "💬 AI VĨ MÔ"])
 
@@ -464,17 +555,32 @@ with tab_dash:
             tab_latest, tab_compare = st.tabs(["🔥 Mới nhất", "⚖️ So sánh theo ngày"])
             
             with tab_latest:
-                fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
-                if has_data3:
-                    st.plotly_chart(fig3, width="stretch", key="yc_single_chart")
+                col_left, col_right = st.columns([1.2, 1])
+                with col_left:
+                    st.markdown("**Biểu đồ Snapshot Lịch sử (Bóng ma)**")
+                    region_choice = st.radio("Hiển thị Quốc gia:", ["Cả hai", "Việt Nam", "Mỹ"], horizontal=True, key="yc_region_radio")
+                    fig_hist, has_hist = plot_yield_curve_historical(df_us_yc, df_vn_yc, region=region_choice, title="")
+                    if has_hist:
+                        st.plotly_chart(fig_hist, width="stretch", key="yc_hist_chart")
+                    else:
+                        st.info("Không có dữ liệu Lịch sử.")
+
+                with col_right:
+                    st.markdown("**Snapshot Ngày Gần Nhất**")
+                    st.markdown("<br>", unsafe_allow_html=True) # Tạo khoảng trống để thẳng hàng với radio button
+                    fig3, has_data3 = plot_yield_curve(df_us_yc, df_vn_yc, target_date=None, title="", show_legend=True)
+                    if has_data3:
+                        st.plotly_chart(fig3, width="stretch", key="yc_single_chart")
+                    else:
+                        st.info("Không có dữ liệu Yield Curve.")
+                        
+                if has_data3 or has_hist:
                     st.markdown("**VN Yield Curve (Từ 01/01/2025 đến nay)**")
                     if not df_vn_yc.empty:
                         df_vn_tbl = df_vn_yc.copy()
                         df_vn_tbl['Date'] = safe_to_datetime(df_vn_tbl['Date'])
                         df_vn_tbl = df_vn_tbl[df_vn_tbl['Date'] >= pd.to_datetime('2025-01-01')]
                         st.dataframe(sort_df_by_date_and_term(df_vn_tbl), width="stretch")
-                else:
-                    st.info("Không có dữ liệu Yield Curve.")
                     
             with tab_compare:
                 col_c1, col_c2 = st.columns(2)

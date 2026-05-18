@@ -152,12 +152,13 @@ def main():
         'no-outline': None,
     }
     
-    pdfkit.from_string(html_out, pdf_path, options=options)
+    # Tạm tắt theo yêu cầu:
+    # pdfkit.from_string(html_out, pdf_path, options=options)
     
     # 7. Gửi email
-    print("Đang định dạng HTML và gửi Email đính kèm PDF...")
-    send_daily_report(report_md, pdf_path)
-    print("Tiến trình hoàn thành!")
+    # print("Đang định dạng HTML và gửi Email đính kèm PDF...")
+    # send_daily_report(report_md, pdf_path)
+    print("Tiến trình phân tích hoàn thành! (Tính năng xuất PDF và gửi Email đang được tạm tắt)")
 
 if __name__ == "__main__":
     main()
