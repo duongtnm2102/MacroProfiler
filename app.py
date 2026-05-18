@@ -285,11 +285,14 @@ def plot_yield_curve_historical(df_us_yc, df_vn_yc, target_date=None, region="C�
         return df[df[date_col] == closest_date]
 
     line_styles = [
-        dict(dash='dash', width=2, opacity=0.8),
-        dict(dash='dot', width=2, opacity=0.6),
-        dict(dash='dashdot', width=2, opacity=0.4),
+        dict(dash='dash', width=2, opacity=0.9),       # 1W
+        dict(dash='dot', width=2, opacity=0.8),        # 1M
+        dict(dash='dashdot', width=2, opacity=0.7),    # 3M
+        dict(dash='longdash', width=2, opacity=0.5),   # 6M
+        dict(dash='longdashdot', width=2, opacity=0.4),# 1Y
+        dict(dash='dash', width=1, opacity=0.3),       # 2Y
     ]
-    labels = ["1 Tuần trước", "1 Tháng trước", "1 Năm trước"]
+    labels = ["1 Tuần trước", "1 Tháng trước", "3 Tháng trước", "6 Tháng trước", "1 Năm trước", "2 Năm trước"]
     
     if target_date is None:
         target_date = pd.to_datetime('today')
@@ -297,7 +300,10 @@ def plot_yield_curve_historical(df_us_yc, df_vn_yc, target_date=None, region="C�
     dates_to_plot = [
         target_date - pd.Timedelta(days=7),
         target_date - pd.Timedelta(days=30),
-        target_date - pd.Timedelta(days=365)
+        target_date - pd.Timedelta(days=90),
+        target_date - pd.Timedelta(days=180),
+        target_date - pd.Timedelta(days=365),
+        target_date - pd.Timedelta(days=730)
     ]
 
     # Plot US
